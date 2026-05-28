@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, Trash2 } from 'lucide-react';
 import { BestScoreData } from '../types';
 
 interface StartScreenProps {
@@ -15,9 +15,12 @@ interface StartScreenProps {
   customTime: number;
   setCustomTime: (v: number) => void;
   bestScore: BestScoreData | null;
+  onDeleteBestScore: () => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore, onDeleteBestScore }) => {
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -32,8 +35,10 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         transition={{ delay: 0.1, duration: 0.5 }}
         className="flex items-center justify-center gap-3 mb-6"
       >
-        <div 
-          className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-tr from-cyan-400 via-indigo-400 to-purple-400 drop-shadow-[0_0_15px_rgba(167,139,250,0.5)] shrink-0"
+        <motion.div 
+          className="w-12 sm:w-16 h-12 sm:h-16 bg-[length:200%_auto] drop-shadow-[0_0_15px_rgba(167,139,250,0.5)] shrink-0 bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)]"
+          animate={{ backgroundPosition: ['0% center', '200% center'] }}
+          transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
           style={{
             maskImage: 'url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)',
             maskSize: 'contain',
@@ -45,9 +50,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
             WebkitMaskPosition: 'center',
           }}
         />
-        <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 tracking-tighter drop-shadow-md">
+        <motion.h1 
+          className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)] bg-[length:200%_auto] tracking-tighter drop-shadow-md"
+          animate={{ backgroundPosition: ['0% center', '200% center'] }}
+          transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+        >
           CZN : Card Guesser
-        </h1>
+        </motion.h1>
       </motion.div>
       
       <motion.p 
@@ -56,7 +65,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         transition={{ delay: 0.2, duration: 0.5 }}
         className="text-slate-400 mb-6 text-base leading-relaxed max-w-md font-medium"
       >
-        Test your knowledge. Identify the cards before time runs out. Every 10x winstreak add 10s to the timer.
+        Test your knowledge. Identify the cards before time runs out. Every 10x win streak adds 10s to the timer, and the faster you guess, the better score you get.
       </motion.p>
 
       {bestScore && bestScore.score > 0 && (
@@ -64,37 +73,84 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
            initial={{ opacity: 0, scale: 0.8 }}
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.25, duration: 0.5, type: 'spring' }}
-           className="mb-8 flex flex-col items-center justify-center p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-full"
+           className="mb-8 flex flex-col items-center justify-center p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-full relative group min-h-[220px]"
         >
-          <div className="flex items-center text-amber-500 mb-1">
-             <Trophy className="w-5 h-5 mr-2" />
-             <span className="font-bold uppercase tracking-widest text-sm">Best Score</span>
-          </div>
-          <span className="text-3xl font-black text-amber-400 drop-shadow-md mb-3">{bestScore.score.toLocaleString()}</span>
-          <div className="grid grid-cols-2 gap-3 w-full max-w-sm text-sm">
-             <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-               <span className="text-amber-500/70">Timer</span>
-               <span className="font-bold text-amber-300">{bestScore.customTime}s</span>
-             </div>
-             <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-               <span className="text-amber-500/70">Answers</span>
-               <span className="font-bold text-amber-300">{bestScore.numOptions}</span>
-             </div>
-             <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-               <span className="text-amber-500/70">Accuracy</span>
-               <span className="font-bold text-amber-300">{(bestScore.correctGuesses / Math.max(bestScore.totalGuesses, 1) * 100).toFixed(0)}%</span>
-             </div>
-             <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-               <span className="text-amber-500/70">Streak</span>
-               <span className="font-bold text-amber-300">{bestScore.maxStreak}</span>
-             </div>
-             <div className="col-span-2 flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-               <span className="text-amber-500/70">Card Pool</span>
-               <span className="font-bold text-amber-300 truncate ml-2">
-                 {[bestScore.pools.character && 'Character', bestScore.pools.neutral && 'Neutral', bestScore.pools.monster && 'Monster'].filter(Boolean).join(' + ')}
-               </span>
-             </div>
-          </div>
+          <AnimatePresence mode="wait">
+            {showConfirmDelete ? (
+              <motion.div
+                key="confirm"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col items-center justify-center w-full h-full py-2"
+              >
+                <div className="text-amber-500 font-bold mb-4 text-lg">Delete Best Score?</div>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowConfirmDelete(false)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDeleteBestScore();
+                      setShowConfirmDelete(false);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-rose-500/80 text-white hover:bg-rose-500 transition-colors font-semibold shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="stats"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center w-full"
+              >
+                <button
+                  onClick={() => setShowConfirmDelete(true)}
+                  className="absolute top-3 right-3 text-amber-500/50 hover:text-rose-400 bg-amber-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-rose-500/30 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
+                  title="Delete Best Score"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                
+                <div className="flex items-center text-amber-500 mb-1">
+                   <Trophy className="w-5 h-5 mr-2" />
+                   <span className="font-bold uppercase tracking-widest text-sm">Best Score</span>
+                </div>
+                <span className="text-3xl font-black text-amber-400 drop-shadow-md mb-3">{bestScore.score.toLocaleString()}</span>
+                <div className="grid grid-cols-2 gap-3 w-full max-w-sm text-sm">
+                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70">Timer</span>
+                     <span className="font-bold text-amber-300">{bestScore.customTime}s</span>
+                   </div>
+                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70">Answers</span>
+                     <span className="font-bold text-amber-300">{bestScore.numOptions}</span>
+                   </div>
+                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70">Accuracy</span>
+                     <span className="font-bold text-amber-300">{(bestScore.correctGuesses / Math.max(bestScore.totalGuesses, 1) * 100).toFixed(0)}%</span>
+                   </div>
+                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70">Streak</span>
+                     <span className="font-bold text-amber-300">{bestScore.maxStreak}</span>
+                   </div>
+                   <div className="col-span-2 flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70">Card Pool</span>
+                     <span className="font-bold text-amber-300 truncate ml-2">
+                       {[bestScore.pools.character && 'Character', bestScore.pools.neutral && 'Neutral', bestScore.pools.monster && 'Monster'].filter(Boolean).join(' + ')}
+                     </span>
+                   </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
 
@@ -204,7 +260,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           className="w-full flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
-          Refresh Card Pool
+          Update Card Pool
         </button>
       </motion.div>
 

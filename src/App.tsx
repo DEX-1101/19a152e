@@ -43,6 +43,11 @@ export default function App() {
   const [hintUsed, setHintUsed] = useState<boolean>(false);
   const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([]);
   
+  const deleteBestScore = useCallback(() => {
+    localStorage.removeItem('czn_best_score');
+    setBestScore(null);
+  }, []);
+
   // Non-repeating deck state
   const [remainingDeck, setRemainingDeck] = useState<CardData[]>([]);
 
@@ -223,9 +228,13 @@ export default function App() {
           setTimeAddedAnim(Date.now());
         }
         
-        // Base 100, drops by 50 points every second, min 10 points
-        const speedBonus = Math.max(10, Math.floor(100 - (timeTakenMs / 40)));
-        const streakMultiplier = 1 + ((newStreak - 1) * 0.2); // +20% score for each consecutive guess
+        // Base 100 points, drops linearly over 5 seconds down to min 50 points
+        const maxScore = 100;
+        const minScore = 50;
+        const timeToMinScoreMs = 5000; // 5 seconds to decay to minimum
+        const speedBonus = Math.max(minScore, Math.floor(maxScore - ((maxScore - minScore) * (timeTakenMs / timeToMinScoreMs))));
+        
+        const streakMultiplier = 1 + ((newStreak - 1) * 0.15); // +15% score for each consecutive guess
         scoreAdd = Math.floor(speedBonus * streakMultiplier);
       } else {
         newStreak = 0;
@@ -283,6 +292,7 @@ export default function App() {
               customTime={customTime}
               setCustomTime={setCustomTime}
               bestScore={bestScore}
+              onDeleteBestScore={deleteBestScore}
             />
           )}
 
