@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardData, GameStats, BestScoreData } from './types';
 import { fetchCards } from './lib/api';
+import { initAudio, playCorrectSound, playIncorrectSound } from './lib/audio';
 import { shuffleArray } from './lib/utils';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
@@ -208,6 +209,7 @@ export default function App() {
   }, [loadCards]);
 
   const startGame = () => {
+    initAudio();
     if (cards.length < 2) return;
     setStats({ score: 0, correctGuesses: 0, totalGuesses: 0, timeTaken: 0, currentStreak: 0, maxStreak: 0 });
     setGameTimeLeft(customTime);
@@ -240,6 +242,9 @@ export default function App() {
     setSelectedOption(optionName);
     const isCorrect = optionName === currentCard.name;
     const timeTakenMs = Date.now() - cardStartTime;
+    
+    if (isCorrect) playCorrectSound();
+    else playIncorrectSound();
     
     setFeedback(isCorrect ? 'correct' : 'incorrect');
     
