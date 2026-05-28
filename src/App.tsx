@@ -12,19 +12,20 @@ type GameStatus = 'start' | 'playing' | 'paused' | 'end';
 const GAME_TIME_SEC = 60;
 
 export default function App() {
-  const [pools, setPools] = useState({ character: true, neutral: true, monster: true });
+  const [pools, setPools] = useState({ character: true, neutral: true, monster: true, other: true });
   const [numOptions, setNumOptions] = useState<number>(4);
   const [customTime, setCustomTime] = useState<number>(60);
   const [bestScore, setBestScore] = useState<BestScoreData | null>(null);
   const [isNewHighScore, setIsNewHighScore] = useState<boolean>(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
-  const [allCards, setAllCards] = useState<{ character: CardData[], neutral: CardData[], monster: CardData[] }>({ character: [], neutral: [], monster: [] });
+  const [allCards, setAllCards] = useState<{ character: CardData[], neutral: CardData[], monster: CardData[], other: CardData[] }>({ character: [], neutral: [], monster: [], other: [] });
   // Dynamic cards array based on selected pools
   const cards = React.useMemo(() => {
     let result: CardData[] = [];
     if (pools.character) result = [...result, ...allCards.character];
     if (pools.neutral) result = [...result, ...allCards.neutral];
     if (pools.monster) result = [...result, ...allCards.monster];
+    if (pools.other) result = [...result, ...allCards.other];
     return result;
   }, [pools, allCards]);
 
@@ -50,6 +51,24 @@ export default function App() {
 
   // Non-repeating deck state
   const [remainingDeck, setRemainingDeck] = useState<CardData[]>([]);
+  const [upcomingDeck, setUpcomingDeck] = useState<CardData[]>([]);
+
+  // Pre-shuffle and preload when cards are ready on the start screen
+  useEffect(() => {
+    if (status === 'start' && cards.length >= 2) {
+      const shuf = shuffleArray(cards);
+      setUpcomingDeck(shuf);
+      
+      // Preload first 5 images of the upcoming deck to ensure the first cards are instant
+      requestAnimationFrame(() => {
+        shuf.slice(0, 5).forEach(c => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = c.imageUrl;
+        });
+      });
+    }
+  }, [cards, status]);
 
   // Feedback state
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -58,12 +77,13 @@ export default function App() {
   const loadCards = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
     try {
-      const [charData, neutralData, monsterData] = await Promise.all([
+      const [charData, neutralData, monsterData, otherData] = await Promise.all([
         fetchCards('cards', forceRefresh),
         fetchCards('CommonCards', forceRefresh),
-        fetchCards('MonsterCard', forceRefresh)
+        fetchCards('MonsterCard', forceRefresh),
+        fetchCards('OtherCard', forceRefresh)
       ]);
-      setAllCards({ character: charData, neutral: neutralData, monster: monsterData || [] });
+      setAllCards({ character: charData, neutral: neutralData, monster: monsterData || [], other: otherData || [] });
     } catch (error) {
       console.error("Card load error:", error);
     } finally {
@@ -96,7 +116,7 @@ export default function App() {
     }
   }, [loadCards]);
 
-  const togglePool = (pool: 'character' | 'neutral' | 'monster') => {
+  const togglePool = (pool: 'character' | 'neutral' | 'monster' | 'other') => {
     setPools(prev => ({ ...prev, [pool]: !prev[pool] }));
   };
 
@@ -157,6 +177,15 @@ export default function App() {
     const newPool = pool.slice(1);
     setRemainingDeck(newPool); // update remaining cards
     
+    // Preload next few images for speed optimization
+    requestAnimationFrame(() => {
+      newPool.slice(0, 5).forEach(c => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = c.imageUrl;
+      });
+    });
+    
     // Pick incorrect options from fullList
     const otherCards = fullList.filter(c => c.name !== correct.name);
     const shuffledOthers = shuffleArray(otherCards);
@@ -184,8 +213,8 @@ export default function App() {
     setGameTimeLeft(customTime);
     setIsNewHighScore(false);
     setStatus('playing');
-    const shuffledDeck = shuffleArray(cards);
-    generateRound(shuffledDeck, cards);
+    const deckToUse = upcomingDeck.length > 0 ? upcomingDeck : shuffleArray(cards);
+    generateRound(deckToUse, cards);
   };
 
   // Main game timer
@@ -398,6 +427,7 @@ export default function App() {
                     alt="Guess this card" 
                     className="w-full h-full object-fill select-none pointer-events-none scale-[1.05]"
                     crossOrigin="anonymous"
+                    fetchPriority="high"
                   />
                   <img
                     src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
@@ -535,6 +565,10 @@ export default function App() {
         )}
       </AnimatePresence>
       
+      <footer className="relative z-10 w-full text-center py-4 text-slate-500 text-sm">
+        Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">x1101</a>
+      </footer>
+
       {/* Background decoration for Dark Mode */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>

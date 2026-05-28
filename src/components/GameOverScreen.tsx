@@ -11,7 +11,7 @@ interface GameOverScreenProps {
   onHome: () => void;
   numOptions: number;
   customTime: number;
-  pools: { character?: boolean; neutral?: boolean; monster?: boolean };
+  pools: { character?: boolean; neutral?: boolean; monster?: boolean; other?: boolean };
 }
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart, bestScore, isNewHighScore, onHome, numOptions, customTime, pools }) => {
@@ -63,7 +63,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
         <div className="bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs">
           <span className="text-slate-500 font-bold mr-2">POOL</span>
           <span className="text-slate-300 font-semibold truncate">
-            {[pools.character && 'Char', pools.neutral && 'Neutral', pools.monster && 'Monster'].filter(Boolean).join('+') || 'None'}
+            {[pools.character && 'Char', pools.neutral && 'Neutral', pools.monster && 'Monster', pools.other && 'Other'].filter(Boolean).join('+') || 'None'}
           </span>
         </div>
       </motion.div>

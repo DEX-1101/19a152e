@@ -17,7 +17,7 @@ export interface BestScoreData {
   score: number;
   numOptions: number;
   customTime: number;
-  pools: { character?: boolean; neutral?: boolean; monster?: boolean };
+  pools: { character?: boolean; neutral?: boolean; monster?: boolean; other?: boolean };
   maxStreak: number;
   correctGuesses: number;
   totalGuesses: number;

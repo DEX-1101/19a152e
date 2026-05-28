@@ -8,8 +8,8 @@ interface StartScreenProps {
   onRefresh: () => void;
   isLoading: boolean;
   totalCards: number;
-  pools: { character: boolean; neutral: boolean; monster?: boolean };
-  onTogglePool: (pool: 'character' | 'neutral' | 'monster') => void;
+  pools: { character: boolean; neutral: boolean; monster?: boolean; other?: boolean };
+  onTogglePool: (pool: 'character' | 'neutral' | 'monster' | 'other') => void;
   numOptions: number;
   setNumOptions: (v: number) => void;
   customTime: number;
@@ -144,7 +144,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                    <div className="col-span-2 flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
                      <span className="text-amber-500/70">Card Pool</span>
                      <span className="font-bold text-amber-300 truncate ml-2">
-                       {[bestScore.pools.character && 'Character', bestScore.pools.neutral && 'Neutral', bestScore.pools.monster && 'Monster'].filter(Boolean).join(' + ')}
+                       {[bestScore.pools.character && 'Character', bestScore.pools.neutral && 'Neutral', bestScore.pools.monster && 'Monster', bestScore.pools.other && 'Other'].filter(Boolean).join(' + ')}
                      </span>
                    </div>
                 </div>
@@ -184,6 +184,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           >
             {pools.monster ? <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" /> : <Square className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />}
             <span className="font-semibold text-xs sm:text-sm">Monster</span>
+          </button>
+
+          <button 
+            onClick={() => onTogglePool('other')}
+            className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-xl border transition-all ${pools.other ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-slate-800/40 border-slate-700 text-slate-400 hover:bg-slate-800/80 hover:border-slate-600'}`}
+          >
+            {pools.other ? <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" /> : <Square className="w-4 h-4 sm:w-5 sm:h-5 text-slate-500" />}
+            <span className="font-semibold text-xs sm:text-sm">Other</span>
           </button>
         </div>
       </motion.div>
