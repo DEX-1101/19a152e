@@ -329,7 +329,7 @@ export default function App() {
                   </button>
                   <div className={`relative flex items-center font-bold px-4 py-2 rounded-2xl border min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
                     <Clock className="w-5 h-5 mr-2" />
-                    <span className="text-2xl w-8 text-right leading-none">{gameTimeLeft}</span><span className={`text-sm ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
+                    <span className="text-2xl min-w-[2rem] text-right leading-none">{gameTimeLeft}</span><span className={`text-sm ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
                     <AnimatePresence>
                       {timeAddedAnim > 0 && (
                         <motion.div
@@ -386,10 +386,15 @@ export default function App() {
                   <img 
                     src={currentCard.imageUrl} 
                     alt="Guess this card" 
-                    className="w-full h-full object-fill select-none pointer-events-none transition-transform duration-[2s] ease-out group-hover:scale-105"
+                    className="w-full h-full object-fill select-none pointer-events-none scale-[1.05]"
                     crossOrigin="anonymous"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img
+                    src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                    alt=""
+                    className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
                   
                   {/* Feedback Overlay */}
                   <AnimatePresence>
