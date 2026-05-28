@@ -1,0 +1,530 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CardData, GameStats, BestScoreData } from './types';
+import { fetchCards } from './lib/api';
+import { shuffleArray } from './lib/utils';
+import { StartScreen } from './components/StartScreen';
+import { GameOverScreen } from './components/GameOverScreen';
+import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb } from 'lucide-react';
+
+type GameStatus = 'start' | 'playing' | 'paused' | 'end';
+
+const GAME_TIME_SEC = 60;
+
+export default function App() {
+  const [pools, setPools] = useState({ character: true, neutral: true, monster: true });
+  const [numOptions, setNumOptions] = useState<number>(4);
+  const [customTime, setCustomTime] = useState<number>(60);
+  const [bestScore, setBestScore] = useState<BestScoreData | null>(null);
+  const [isNewHighScore, setIsNewHighScore] = useState<boolean>(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
+  const [allCards, setAllCards] = useState<{ character: CardData[], neutral: CardData[], monster: CardData[] }>({ character: [], neutral: [], monster: [] });
+  // Dynamic cards array based on selected pools
+  const cards = React.useMemo(() => {
+    let result: CardData[] = [];
+    if (pools.character) result = [...result, ...allCards.character];
+    if (pools.neutral) result = [...result, ...allCards.neutral];
+    if (pools.monster) result = [...result, ...allCards.monster];
+    return result;
+  }, [pools, allCards]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<GameStatus>('start');
+  
+  // Game State
+  const [stats, setStats] = useState<GameStats>({ score: 0, correctGuesses: 0, totalGuesses: 0, timeTaken: 0, currentStreak: 0, maxStreak: 0 });
+  const [gameTimeLeft, setGameTimeLeft] = useState(GAME_TIME_SEC);
+  const [currentCard, setCurrentCard] = useState<CardData | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [cardStartTime, setCardStartTime] = useState<number>(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  
+  // Hint State
+  const [hintUsed, setHintUsed] = useState<boolean>(false);
+  const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([]);
+  
+  // Non-repeating deck state
+  const [remainingDeck, setRemainingDeck] = useState<CardData[]>([]);
+
+  // Feedback state
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [timeAddedAnim, setTimeAddedAnim] = useState<number>(0);
+
+  const loadCards = useCallback(async (forceRefresh = false) => {
+    setIsLoading(true);
+    try {
+      const [charData, neutralData, monsterData] = await Promise.all([
+        fetchCards('cards', forceRefresh),
+        fetchCards('CommonCards', forceRefresh),
+        fetchCards('MonsterCard', forceRefresh)
+      ]);
+      setAllCards({ character: charData, neutral: neutralData, monster: monsterData || [] });
+    } catch (error) {
+      console.error("Card load error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initialize
+  useEffect(() => {
+    loadCards();
+    const savedScore = localStorage.getItem('czn_best_score');
+    if (savedScore) {
+      try {
+        setBestScore(JSON.parse(savedScore));
+      } catch (e) {}
+    } else {
+      const oldScore = localStorage.getItem('czn_highscore');
+      if (oldScore) {
+        setBestScore({
+          score: parseInt(oldScore, 10),
+          numOptions: 4,
+          customTime: 60,
+          pools: { character: true, neutral: true },
+          maxStreak: 0,
+          correctGuesses: 0,
+          totalGuesses: 0,
+          timeTaken: 0
+        });
+      }
+    }
+  }, [loadCards]);
+
+  const togglePool = (pool: 'character' | 'neutral' | 'monster') => {
+    setPools(prev => ({ ...prev, [pool]: !prev[pool] }));
+  };
+
+  const togglePause = () => {
+    setStatus(prev => prev === 'playing' ? 'paused' : 'playing');
+  };
+
+  const useHint = () => {
+    if (hintUsed || stats.score < 50 || status === 'paused' || selectedOption !== null || !currentCard) return;
+
+    setStats(prev => ({
+      ...prev,
+      score: Math.max(0, prev.score - 50)
+    }));
+    setHintUsed(true);
+
+    const wrongOptions = options.filter(opt => opt !== currentCard.name);
+    const numToRemove = Math.ceil(wrongOptions.length / 2);
+    const shuffledWrong = shuffleArray([...wrongOptions]);
+    const toEliminate = shuffledWrong.slice(0, numToRemove);
+
+    setEliminatedOptions(toEliminate);
+  };
+
+  const endGame = useCallback(() => {
+    setStatus('end');
+    setStats(currentStats => {
+      const currentHighest = bestScore?.score || 0;
+      if (currentStats.score > currentHighest) {
+        const newBest: BestScoreData = {
+          score: currentStats.score,
+          numOptions,
+          customTime,
+          pools,
+          maxStreak: currentStats.maxStreak,
+          correctGuesses: currentStats.correctGuesses,
+          totalGuesses: currentStats.totalGuesses,
+          timeTaken: currentStats.timeTaken
+        };
+        setBestScore(newBest);
+        setIsNewHighScore(true);
+        localStorage.setItem('czn_best_score', JSON.stringify(newBest));
+      } else {
+        setIsNewHighScore(false);
+      }
+      return currentStats;
+    });
+  }, [bestScore, numOptions, customTime, pools]);
+
+  const generateRound = useCallback((pool: CardData[], fullList: CardData[]) => {
+    if (pool.length === 0) {
+      endGame();
+      return;
+    }
+    
+    // Pick the first card from the shuffled pool
+    const correct = pool[0];
+    const newPool = pool.slice(1);
+    setRemainingDeck(newPool); // update remaining cards
+    
+    // Pick incorrect options from fullList
+    const otherCards = fullList.filter(c => c.name !== correct.name);
+    const shuffledOthers = shuffleArray(otherCards);
+    const optionsCount = Math.min(numOptions - 1, shuffledOthers.length);
+    const selectedOthers = shuffledOthers.slice(0, optionsCount).map(c => c.name);
+    
+    const finalOptions = shuffleArray([correct.name, ...selectedOthers]);
+    
+    setCurrentCard(correct);
+    setOptions(finalOptions);
+    setCardStartTime(Date.now());
+    setSelectedOption(null);
+    setFeedback(null);
+    setHintUsed(false);
+    setEliminatedOptions([]);
+  }, [numOptions, endGame]);
+
+  const refreshCards = useCallback(() => {
+    loadCards(true);
+  }, [loadCards]);
+
+  const startGame = () => {
+    if (cards.length < 2) return;
+    setStats({ score: 0, correctGuesses: 0, totalGuesses: 0, timeTaken: 0, currentStreak: 0, maxStreak: 0 });
+    setGameTimeLeft(customTime);
+    setIsNewHighScore(false);
+    setStatus('playing');
+    const shuffledDeck = shuffleArray(cards);
+    generateRound(shuffledDeck, cards);
+  };
+
+  // Main game timer
+  useEffect(() => {
+    if (status !== 'playing') return;
+    
+    const interval = setInterval(() => {
+      setGameTimeLeft(prev => {
+        if (prev <= 1) {
+          endGame();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [status, endGame]);
+
+  const handleGuess = (optionName: string) => {
+    if (selectedOption || !currentCard) return; // Prevent multiple guesses
+    
+    setSelectedOption(optionName);
+    const isCorrect = optionName === currentCard.name;
+    const timeTakenMs = Date.now() - cardStartTime;
+    
+    setFeedback(isCorrect ? 'correct' : 'incorrect');
+    
+    setStats(prev => {
+      let scoreAdd = 0;
+      let newStreak = prev.currentStreak;
+      let newMaxStreak = prev.maxStreak;
+
+      if (isCorrect) {
+        newStreak += 1;
+        newMaxStreak = Math.max(newMaxStreak, newStreak);
+        
+        if (newStreak > 0 && newStreak % 10 === 0) {
+          setGameTimeLeft(time => time + 10);
+          setTimeAddedAnim(Date.now());
+        }
+        
+        // Base 100, drops by 50 points every second, min 10 points
+        const speedBonus = Math.max(10, Math.floor(100 - (timeTakenMs / 40)));
+        const streakMultiplier = 1 + ((newStreak - 1) * 0.2); // +20% score for each consecutive guess
+        scoreAdd = Math.floor(speedBonus * streakMultiplier);
+      } else {
+        newStreak = 0;
+      }
+      
+      return {
+        ...prev,
+        score: prev.score + scoreAdd,
+        correctGuesses: prev.correctGuesses + (isCorrect ? 1 : 0),
+        totalGuesses: prev.totalGuesses + 1,
+        timeTaken: prev.timeTaken + timeTakenMs / 1000,
+        currentStreak: newStreak,
+        maxStreak: newMaxStreak
+      };
+    });
+
+    // Proceed to next round after short delay
+    setTimeout(() => {
+      setStatus(currentStatus => {
+        if (currentStatus === 'playing') {
+          // generateRound will use remainingDeck via closure, but to avoid stale state:
+          // we use a functional update and call another useEffect or we just rely on latest state in render.
+          // Because handleGuess is recreated on each render, `remainingDeck` is up to date here.
+          generateRound(remainingDeck, cards);
+        }
+        return currentStatus;
+      });
+    }, 1200);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col selection:bg-indigo-900/50 selection:text-indigo-200">
+      
+      {/* Background decoration for Dark Mode */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-indigo-900/20 blur-[120px] mix-blend-screen"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-purple-900/20 blur-[100px] mix-blend-screen"></div>
+        <div className="absolute top-[40%] left-[20%] w-[30vw] h-[30vw] rounded-full bg-rose-900/10 blur-[80px] mix-blend-screen"></div>
+      </div>
+
+      {/* Main Content */}
+      <main className="relative z-10 w-full flex-grow flex items-center justify-center p-4">
+        <AnimatePresence mode="wait">
+          {status === 'start' && (
+            <StartScreen 
+              key="start" 
+              onStart={startGame} 
+              onRefresh={refreshCards}
+              isLoading={isLoading} 
+              totalCards={cards.length}
+              pools={pools}
+              onTogglePool={togglePool}
+              numOptions={numOptions}
+              setNumOptions={setNumOptions}
+              customTime={customTime}
+              setCustomTime={setCustomTime}
+              bestScore={bestScore}
+            />
+          )}
+
+          {(status === 'playing' || status === 'paused') && currentCard && (
+            <motion.div 
+              key="playing"
+              initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-2xl flex flex-col items-center"
+            >
+              {/* HUD */}
+              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/5 mb-8 max-w-xl">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      if (status === 'playing') setStatus('paused');
+                      setShowQuitConfirm(true);
+                    }}
+                    className="flex shrink-0 items-center justify-center text-slate-300 hover:text-rose-300 hover:bg-slate-800 transition-colors bg-slate-800/50 w-10 h-10 rounded-2xl border border-white/5"
+                    title="Quit Game"
+                  >
+                    <Home className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={togglePause}
+                    className="flex shrink-0 items-center justify-center text-slate-300 hover:text-indigo-300 hover:bg-slate-800 transition-colors bg-slate-800/50 w-10 h-10 rounded-2xl border border-white/5"
+                    title="Pause Game"
+                  >
+                    {status === 'paused' ? <Play className="w-5 h-5 ml-1" /> : <Pause className="w-5 h-5 cursor-pointer" />}
+                  </button>
+                  <button 
+                    onClick={useHint}
+                    disabled={hintUsed || stats.score < 50 || status === 'paused' || selectedOption !== null}
+                    className={`flex shrink-0 items-center justify-center transition-colors w-10 h-10 rounded-2xl border ${
+                      hintUsed || stats.score < 50 || selectedOption !== null
+                        ? 'text-slate-600 bg-slate-800/30 border-white/5 cursor-not-allowed'
+                        : 'text-amber-300 hover:text-amber-200 hover:bg-slate-800 bg-amber-500/10 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                    }`}
+                    title="Use Hint (-50 points)"
+                  >
+                    <Lightbulb className={`w-5 h-5 ${!hintUsed && stats.score >= 50 && selectedOption === null && status !== 'paused' ? 'animate-pulse' : ''}`} />
+                  </button>
+                  <div className={`relative flex items-center font-bold px-4 py-2 rounded-2xl border min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
+                    <Clock className="w-5 h-5 mr-2" />
+                    <span className="text-2xl w-8 text-right leading-none">{gameTimeLeft}</span><span className={`text-sm ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
+                    <AnimatePresence>
+                      {timeAddedAnim > 0 && (
+                        <motion.div
+                          key={timeAddedAnim}
+                          initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, y: -30, scale: 1.2 }}
+                          exit={{ opacity: 0, y: -40 }}
+                          transition={{ duration: 1 }}
+                          onAnimationComplete={() => setTimeAddedAnim(0)}
+                          className="absolute -top-6 left-1/2 -translate-x-1/2 text-emerald-400 font-black text-xl whitespace-nowrap drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] z-50 pointer-events-none"
+                        >
+                          +10s!
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center flex-1">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1 flex items-center">
+                    Score
+                  </span>
+                  <div className="flex flex-col items-center justify-center min-h-[44px]">
+                    <span className="font-black text-3xl text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 leading-none drop-shadow-sm">{stats.score.toLocaleString()}</span>
+                    <AnimatePresence>
+                      {stats.currentStreak > 1 && (
+                        <motion.span 
+                          initial={{ opacity: 0, y: -5, scale: 0.8 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="text-xs font-bold text-amber-400 mt-1 flex items-center tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+                        >
+                          <Flame className="w-3 h-3 mr-1" />
+                          {stats.currentStreak}x STREAK
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+                <div className="flex items-center text-emerald-400 font-bold bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-500/20 min-w-[90px] justify-end shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+                  <Star className="w-5 h-5 mr-2" />
+                  <span className="text-2xl leading-none">{stats.correctGuesses}</span>
+                </div>
+              </div>
+
+              {/* Card Display Area */}
+              <div className="relative w-full max-w-xs flex flex-col items-center mb-8 perspective-1000">
+                <motion.div 
+                  initial={{ rotateY: 90, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                  key={currentCard.name}
+                  className={`relative w-full aspect-[353/523] bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden group border-2 border-white/10 ${status === 'paused' ? 'blur-md grayscale' : ''}`}
+                >
+                  <img 
+                    src={currentCard.imageUrl} 
+                    alt="Guess this card" 
+                    className="w-full h-full object-fill select-none pointer-events-none transition-transform duration-[2s] ease-out group-hover:scale-105"
+                    crossOrigin="anonymous"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  {/* Feedback Overlay */}
+                  <AnimatePresence>
+                    {feedback && (
+                      <motion.div
+                        initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+                        exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                        className={`absolute inset-0 flex items-center justify-center bg-slate-950/60 transition-colors duration-300 ${feedback === 'correct' ? 'bg-emerald-950/40' : 'bg-rose-950/40'}`}
+                      >
+                        <motion.div 
+                          initial={{ scale: 0.5, opacity: 0, y: 20 }}
+                          animate={{ scale: 1, opacity: 1, y: 0 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          className={`px-8 py-4 rounded-2xl text-2xl font-black shadow-[0_0_40px_rgba(0,0,0,0.3)] flex items-center border ${
+                            feedback === 'correct' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-rose-500/90 text-white border-rose-400'
+                          }`}
+                        >
+                          {feedback === 'correct' ? 'CORRECT!' : 'INCORRECT'}
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </div>
+
+              {/* Options Grid */}
+              <div className={`grid ${options.length === 6 ? 'grid-cols-3' : 'grid-cols-2'} gap-3 sm:gap-4 w-full ${options.length === 6 ? 'max-w-2xl' : 'max-w-xl'}`}>
+                {options.map((opt, i) => {
+                  const isSelected = selectedOption === opt;
+                  const isCorrectAnswer = opt === currentCard.name;
+                  const isEliminated = eliminatedOptions.includes(opt);
+                  
+                  let btnClass = "bg-slate-800/60 text-slate-300 border-white/10 hover:border-indigo-400/50 hover:bg-slate-700/80 hover:text-white shadow-lg hover:shadow-indigo-500/20";
+                  
+                  if (selectedOption) {
+                    if (isCorrectAnswer) {
+                      btnClass = "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_30px_rgba(16,185,129,0.2)] z-10 relative scale-[1.02] bg-emerald-900/40";
+                    } else if (isSelected) {
+                      btnClass = "bg-rose-500/10 border-rose-500/30 text-rose-300 opacity-90 bg-rose-900/30";
+                    } else {
+                      btnClass = "bg-slate-900/50 border-slate-800/50 text-slate-600 opacity-40 scale-[0.98]";
+                    }
+                  } else if (isEliminated) {
+                    btnClass = "opacity-0 pointer-events-none"; // Hidden logic for eliminated options
+                  }
+
+                  return (
+                    <motion.button
+                      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                      animate={{ opacity: isEliminated ? 0 : 1, y: 0, scale: selectedOption && isCorrectAnswer ? 1.02 : selectedOption && !isSelected ? 0.98 : 1 }}
+                      transition={{ 
+                        opacity: { delay: isEliminated ? 0 : i * 0.08, duration: 0.3 }, 
+                        y: { delay: isEliminated ? 0 : i * 0.08, duration: 0.3 },
+                        scale: { duration: 0.3 }
+                      }}
+                      key={opt}
+                      onClick={() => handleGuess(opt)}
+                      disabled={selectedOption !== null || status === 'paused' || isEliminated}
+                      className={`relative min-h-[4.5rem] px-3 sm:px-5 py-3 sm:py-4 text-center sm:text-left font-bold text-[13px] sm:text-[14px] leading-snug rounded-2xl border transition-all duration-300 flex items-center justify-center sm:justify-start group overflow-hidden backdrop-blur-md ${btnClass}`}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+                      <span className="relative z-10 leading-tight block">{opt}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {status === 'end' && (
+            <GameOverScreen 
+              key="end" 
+              stats={stats} 
+              onRestart={startGame} 
+              bestScore={bestScore}
+              isNewHighScore={isNewHighScore}
+              onHome={() => setStatus('start')}
+              numOptions={numOptions}
+              customTime={customTime}
+              pools={pools}
+            />
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* Quit Confirmation Modal */}
+      <AnimatePresence>
+        {showQuitConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center text-center"
+            >
+              <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4">
+                <Home className="w-8 h-8 text-rose-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Quit Game?</h3>
+              <p className="text-slate-400 mb-6 text-sm">
+                Are you sure you want to go back to the start menu? Your current progress will be lost.
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowQuitConfirm(false)}
+                  className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowQuitConfirm(false);
+                    setStatus('start');
+                  }}
+                  className="flex-1 py-3 px-4 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-rose-500/20"
+                >
+                  Quit Game
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Background decoration for Dark Mode */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
+      </div>
+    </div>
+  );
+}
