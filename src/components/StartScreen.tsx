@@ -33,7 +33,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.5 }}
-        className="flex items-center justify-center gap-3 mb-6"
+        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 mb-6"
       >
         <motion.div 
           className="w-12 sm:w-16 h-12 sm:h-16 bg-[length:200%_auto] drop-shadow-[0_0_15px_rgba(167,139,250,0.5)] shrink-0 bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)]"
@@ -51,7 +51,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           }}
         />
         <motion.h1 
-          className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)] bg-[length:200%_auto] tracking-tighter drop-shadow-md"
+          className="text-4xl md:text-5xl font-black text-center sm:text-left text-transparent bg-clip-text bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)] bg-[length:200%_auto] tracking-tighter drop-shadow-md"
           animate={{ backgroundPosition: ['0% center', '200% center'] }}
           transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
         >
@@ -63,9 +63,9 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="text-slate-400 mb-6 text-base leading-relaxed max-w-md font-medium"
+        className="text-slate-400 mb-6 text-sm sm:text-base leading-relaxed max-w-md font-medium"
       >
-        Test your knowledge. Identify the cards before time runs out. Every 10x win streak adds 10s to the timer, and the faster you guess, the better score you get.
+        A fan-made Chaos Zero Nightmare card guessing game. All asset used are belong to Smilegate and Super Creative.
       </motion.p>
 
       {bestScore && bestScore.score > 0 && (
@@ -113,7 +113,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
               >
                 <button
                   onClick={() => setShowConfirmDelete(true)}
-                  className="absolute top-3 right-3 text-amber-500/50 hover:text-rose-400 bg-amber-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-rose-500/30 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
+                  className="absolute top-3 right-3 text-amber-500/50 hover:text-rose-400 bg-amber-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-rose-500/30 focus:opacity-100 outline-none"
                   title="Delete Best Score"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -124,27 +124,27 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                    <span className="font-bold uppercase tracking-widest text-sm">Best Score</span>
                 </div>
                 <span className="text-3xl font-black text-amber-400 drop-shadow-md mb-3">{bestScore.score.toLocaleString()}</span>
-                <div className="grid grid-cols-2 gap-3 w-full max-w-sm text-sm">
-                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-sm text-[10px] sm:text-[13px]">
+                   <div className="flex items-center justify-between bg-amber-950/40 px-2 sm:px-3 py-1.5 rounded-lg border border-amber-500/10">
                      <span className="text-amber-500/70">Timer</span>
                      <span className="font-bold text-amber-300">{bestScore.customTime}s</span>
                    </div>
-                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                   <div className="flex items-center justify-between bg-amber-950/40 px-2 sm:px-3 py-1.5 rounded-lg border border-amber-500/10">
                      <span className="text-amber-500/70">Answers</span>
                      <span className="font-bold text-amber-300">{bestScore.numOptions}</span>
                    </div>
-                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                   <div className="flex items-center justify-between bg-amber-950/40 px-2 sm:px-3 py-1.5 rounded-lg border border-amber-500/10">
                      <span className="text-amber-500/70">Accuracy</span>
                      <span className="font-bold text-amber-300">{(bestScore.correctGuesses / Math.max(bestScore.totalGuesses, 1) * 100).toFixed(0)}%</span>
                    </div>
-                   <div className="flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
+                   <div className="flex items-center justify-between bg-amber-950/40 px-2 sm:px-3 py-1.5 rounded-lg border border-amber-500/10">
                      <span className="text-amber-500/70">Streak</span>
                      <span className="font-bold text-amber-300">{bestScore.maxStreak}</span>
                    </div>
-                   <div className="col-span-2 flex items-center justify-between bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-500/10">
-                     <span className="text-amber-500/70">Card Pool</span>
-                     <span className="font-bold text-amber-300 truncate ml-2">
-                       {[bestScore.pools.character && 'Character', bestScore.pools.neutral && 'Neutral', bestScore.pools.monster && 'Monster', bestScore.pools.other && 'Other'].filter(Boolean).join(' + ')}
+                   <div className="col-span-2 flex items-center justify-between bg-amber-950/40 px-2 sm:px-3 py-1.5 rounded-lg border border-amber-500/10">
+                     <span className="text-amber-500/70 text-[9px] sm:text-xs uppercase tracking-wider">Card Pools</span>
+                     <span className="font-bold text-amber-300 truncate ml-2 text-[9px] sm:text-xs">
+                       {(bestScore.pools.character && bestScore.pools.neutral && bestScore.pools.monster && bestScore.pools.other) ? 'ALL' : [bestScore.pools.character && 'CHAR', bestScore.pools.neutral && 'NEU', bestScore.pools.monster && 'MON', bestScore.pools.other && 'OTH'].filter(Boolean).join(', ')}
                      </span>
                    </div>
                 </div>
@@ -203,7 +203,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         className="grid grid-cols-1 sm:grid-cols-2 gap-4 gap-y-6 mb-8 w-full"
       >
         <div className="flex flex-col items-center gap-3 w-full justify-center">
-          <span className="text-slate-400 font-semibold text-sm">Answers per round:</span>
+          <span className="text-slate-400 font-semibold text-sm">Number of answers:</span>
           <div className="flex bg-slate-800/60 p-1.5 rounded-xl border border-slate-700/50 w-full max-w-[200px] justify-center">
             {[4, 6].map((num) => (
               <button
@@ -278,7 +278,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           animate={{ opacity: 1 }}
           className="mt-6 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 font-medium text-sm"
         >
-          Not enough cards to play. Need at least 2 image files.
+          Not enough cards to play. Need at least one card pool.
         </motion.p>
       )}
     </motion.div>

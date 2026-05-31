@@ -1,6 +1,6 @@
 {
   "name": "CZN : Card Guesser",
-  "description": "Guess the right card from the given options.",
+  "description": "A fan-made Chaos Zero Nightmare card guessing game.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

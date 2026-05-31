@@ -45,50 +45,57 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
           <Sparkles className="w-4 h-4 mr-2" /> NEW BEST SCORE! <Sparkles className="w-4 h-4 ml-2" />
         </motion.div>
       ) : (
-        <p className="text-slate-400 mb-4 font-medium">Final performance analysis {bestScore ? `(Best Score: ${bestScore.score.toLocaleString()})` : ''}</p>
+        <div className="flex flex-col items-center mb-4">
+          <p className="text-slate-400 font-medium">Final performance analysis</p>
+          {bestScore && (
+            <p className="text-sm text-slate-500 font-bold mt-1">
+              Best Score: <span className="text-amber-400">{bestScore.score.toLocaleString()}</span>
+            </p>
+          )}
+        </div>
       )}
 
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-        className="flex flex-wrap justify-center gap-3 w-full mb-6"
+        className="flex flex-wrap justify-center gap-1 sm:gap-3 w-full mb-6"
       >
-        <div className="bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs">
-          <span className="text-slate-500 font-bold mr-2">TIMER</span>
+        <div className="bg-slate-800/40 px-2 sm:px-3 py-1.5 rounded-lg border border-slate-700/50 text-[10px] sm:text-xs">
+          <span className="text-slate-500 font-bold mr-1 sm:mr-2">TIMER</span>
           <span className="text-slate-300 font-semibold">{customTime}s</span>
         </div>
-        <div className="bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs">
-          <span className="text-slate-500 font-bold mr-2">OPTIONS</span>
+        <div className="bg-slate-800/40 px-2 sm:px-3 py-1.5 rounded-lg border border-slate-700/50 text-[10px] sm:text-xs">
+          <span className="text-slate-500 font-bold mr-1 sm:mr-2">ANSWERS</span>
           <span className="text-slate-300 font-semibold">{numOptions}</span>
         </div>
-        <div className="bg-slate-800/40 px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs">
-          <span className="text-slate-500 font-bold mr-2">POOL</span>
-          <span className="text-slate-300 font-semibold truncate">
-            {[pools.character && 'Char', pools.neutral && 'Neutral', pools.monster && 'Monster', pools.other && 'Other'].filter(Boolean).join('+') || 'None'}
+        <div className="bg-slate-800/40 px-2 sm:px-3 py-1.5 rounded-lg border border-slate-700/50 text-[10px] sm:text-xs">
+          <span className="text-slate-500 font-bold mr-1 sm:mr-2">CARD POOLS</span>
+          <span className="text-slate-300 font-semibold truncate max-w-[60px] sm:max-w-none inline-block align-bottom">
+            {(pools.character && pools.neutral && pools.monster && pools.other) ? 'ALL' : [pools.character && 'CHAR', pools.neutral && 'NEU', pools.monster && 'MON', pools.other && 'OTH'].filter(Boolean).join(', ') || 'NONE'}
           </span>
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-4 w-full mb-8">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 w-full mb-6 sm:mb-8">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-slate-800/40 p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
+          className="bg-slate-800/40 p-3 sm:p-5 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
         >
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Total Score</p>
-          <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-400">{stats.score.toLocaleString()}</p>
+          <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 sm:mb-2 text-center">Total Score</p>
+          <p className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-400">{stats.score.toLocaleString()}</p>
         </motion.div>
         
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-slate-800/40 p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
+          className="bg-slate-800/40 p-3 sm:p-5 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
         >
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">Accuracy</p>
+          <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 sm:mb-2 text-center">Accuracy</p>
           <div className="flex items-center text-slate-200">
-            <Target className="w-5 h-5 mr-2 text-rose-400" />
-            <span className="text-3xl font-black">{accuracy}%</span>
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 text-rose-400" />
+            <span className="text-2xl sm:text-3xl font-black">{accuracy}%</span>
           </div>
         </motion.div>
 
@@ -96,11 +103,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-slate-800/40 p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
+          className="bg-slate-800/40 p-3 sm:p-5 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
         >
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Correct</p>
+          <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 text-center">Correct</p>
           <div className="flex items-center text-slate-200 mt-1">
-            <span className="text-3xl font-black">{stats.correctGuesses} <span className="text-slate-500 font-medium text-xl">/ {stats.totalGuesses}</span></span>
+            <span className="text-2xl sm:text-3xl font-black">{stats.correctGuesses} <span className="text-slate-500 font-medium text-sm sm:text-xl">/ {stats.totalGuesses}</span></span>
           </div>
         </motion.div>
 
@@ -108,12 +115,12 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-slate-800/40 p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
+          className="bg-slate-800/40 p-3 sm:p-5 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-slate-700/50 hover:bg-slate-800/60 transition-colors"
         >
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Max Streak</p>
+          <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1 text-center">Max Streak</p>
           <div className="flex items-center text-slate-200 mt-1">
-             <Flame className="w-5 h-5 mr-2 text-amber-400" />
-             <span className="text-3xl font-black">{stats.maxStreak}</span>
+             <Flame className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 text-amber-400" />
+             <span className="text-2xl sm:text-3xl font-black">{stats.maxStreak}</span>
           </div>
         </motion.div>
       </div>

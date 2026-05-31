@@ -1,25 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Analytics } from '@vercel/analytics/react';
 import { CardData, GameStats, BestScoreData } from './types';
 import { fetchCards } from './lib/api';
-import { initAudio, playCorrectSound, playIncorrectSound } from './lib/audio';
+import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from './lib/audio';
 import { shuffleArray } from './lib/utils';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
-import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb } from 'lucide-react';
+import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb, Eye } from 'lucide-react';
 
 type GameStatus = 'start' | 'playing' | 'paused' | 'end';
 
-const GAME_TIME_SEC = 60;
+const GAME_TIME_SEC = 180;
 
 export default function App() {
   const [pools, setPools] = useState({ character: true, neutral: true, monster: true, other: true });
   const [numOptions, setNumOptions] = useState<number>(4);
-  const [customTime, setCustomTime] = useState<number>(60);
+  const [customTime, setCustomTime] = useState<number>(180);
   const [bestScore, setBestScore] = useState<BestScoreData | null>(null);
   const [isNewHighScore, setIsNewHighScore] = useState<boolean>(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
+  const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const [dontShowAgain, setDontShowAgain] = useState<boolean>(false);
+  const [pauseHistory, setPauseHistory] = useState<number[]>([]);
+  const [showEasterEgg, setShowEasterEgg] = useState<boolean>(false);
+  const [easterEggCountdown, setEasterEggCountdown] = useState<number>(0);
+  const [revealEasterEgg, setRevealEasterEgg] = useState<boolean>(false);
   const [allCards, setAllCards] = useState<{ character: CardData[], neutral: CardData[], monster: CardData[], other: CardData[] }>({ character: [], neutral: [], monster: [], other: [] });
   // Dynamic cards array based on selected pools
   const cards = React.useMemo(() => {
@@ -44,6 +49,7 @@ export default function App() {
   
   // Hint State
   const [hintUsed, setHintUsed] = useState<boolean>(false);
+  const [totalHintsUsed, setTotalHintsUsed] = useState<number>(0);
   const [eliminatedOptions, setEliminatedOptions] = useState<string[]>([]);
   
   const deleteBestScore = useCallback(() => {
@@ -107,7 +113,7 @@ export default function App() {
         setBestScore({
           score: parseInt(oldScore, 10),
           numOptions: 4,
-          customTime: 60,
+          customTime: 180,
           pools: { character: true, neutral: true },
           maxStreak: 0,
           correctGuesses: 0,
@@ -122,18 +128,19 @@ export default function App() {
     setPools(prev => ({ ...prev, [pool]: !prev[pool] }));
   };
 
-  const togglePause = () => {
-    setStatus(prev => prev === 'playing' ? 'paused' : 'playing');
-  };
+
+
+  const hintCost = totalHintsUsed === 0 ? 50 : totalHintsUsed * 100;
 
   const useHint = () => {
-    if (hintUsed || stats.score < 50 || status === 'paused' || selectedOption !== null || !currentCard) return;
+    if (hintUsed || stats.score < hintCost || status === 'paused' || selectedOption !== null || !currentCard) return;
 
     setStats(prev => ({
       ...prev,
-      score: Math.max(0, prev.score - 50)
+      score: Math.max(0, prev.score - hintCost)
     }));
     setHintUsed(true);
+    setTotalHintsUsed(prev => prev + 1);
 
     const wrongOptions = options.filter(opt => opt !== currentCard.name);
     const numToRemove = Math.ceil(wrongOptions.length / 2);
@@ -168,11 +175,37 @@ export default function App() {
     });
   }, [bestScore, numOptions, customTime, pools]);
 
+  const togglePause = () => {
+    if (selectedOption !== null || !currentCard) return;
+
+    const now = Date.now();
+    const lastToggle = pauseHistory.length > 0 ? pauseHistory[pauseHistory.length - 1] : 0;
+    
+    if (now - lastToggle < 5000) {
+      const newHistory = [...pauseHistory, now];
+      if (newHistory.length > 10) {
+        setShowEasterEgg(true);
+        setEasterEggCountdown(10);
+        setPauseHistory([]);
+        endGame();
+        return;
+      } else {
+        setPauseHistory(newHistory);
+      }
+    } else {
+      setPauseHistory([now]);
+    }
+
+    setStatus(prev => prev === 'playing' ? 'paused' : 'playing');
+  };
+
   const generateRound = useCallback((pool: CardData[], fullList: CardData[]) => {
     if (pool.length === 0) {
       endGame();
       return;
     }
+    
+    playSwapSound();
     
     // Pick the first card from the shuffled pool
     const correct = pool[0];
@@ -212,11 +245,25 @@ export default function App() {
   const startGame = () => {
     initAudio();
     if (cards.length < 2) return;
+    if (localStorage.getItem('czn_hide_tutorial') !== 'true') {
+      setShowTutorial(true);
+      return;
+    }
+    startNewGameInternal();
+  };
+
+  const startNewGameInternal = () => {
+    if (showTutorial && dontShowAgain) {
+      localStorage.setItem('czn_hide_tutorial', 'true');
+    }
+    setShowTutorial(false);
     setStats({ score: 0, correctGuesses: 0, totalGuesses: 0, timeTaken: 0, currentStreak: 0, maxStreak: 0 });
     setGameTimeLeft(customTime);
     setIsNewHighScore(false);
+    setTotalHintsUsed(0);
     setStatus('playing');
-    const deckToUse = upcomingDeck.length > 0 ? upcomingDeck : shuffleArray(cards);
+    const deckToUse = upcomingDeck.length > 0 ? upcomingDeck : shuffleArray([...cards]);
+    setUpcomingDeck([]);
     generateRound(deckToUse, cards);
   };
 
@@ -236,6 +283,18 @@ export default function App() {
     
     return () => clearInterval(interval);
   }, [status, endGame]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (showEasterEgg && easterEggCountdown > 0) {
+      interval = setInterval(() => {
+        setEasterEggCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    }
+  }, [showEasterEgg, easterEggCountdown]);
 
   const handleGuess = (optionName: string) => {
     if (selectedOption || !currentCard) return; // Prevent multiple guesses
@@ -341,40 +400,20 @@ export default function App() {
               className="w-full max-w-2xl flex flex-col items-center"
             >
               {/* HUD */}
-              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-2xl border border-white/5 mb-8 max-w-xl">
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => {
-                      if (status === 'playing') setStatus('paused');
-                      setShowQuitConfirm(true);
-                    }}
-                    className="flex shrink-0 items-center justify-center text-slate-300 hover:text-rose-300 hover:bg-slate-800 transition-colors bg-slate-800/50 w-10 h-10 rounded-2xl border border-white/5"
-                    title="Quit Game"
-                  >
-                    <Home className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={togglePause}
-                    className="flex shrink-0 items-center justify-center text-slate-300 hover:text-indigo-300 hover:bg-slate-800 transition-colors bg-slate-800/50 w-10 h-10 rounded-2xl border border-white/5"
-                    title="Pause Game"
-                  >
-                    {status === 'paused' ? <Play className="w-5 h-5 ml-1" /> : <Pause className="w-5 h-5 cursor-pointer" />}
-                  </button>
-                  <button 
-                    onClick={useHint}
-                    disabled={hintUsed || stats.score < 50 || status === 'paused' || selectedOption !== null}
-                    className={`flex shrink-0 items-center justify-center transition-colors w-10 h-10 rounded-2xl border ${
-                      hintUsed || stats.score < 50 || selectedOption !== null
-                        ? 'text-slate-600 bg-slate-800/30 border-white/5 cursor-not-allowed'
-                        : 'text-amber-300 hover:text-amber-200 hover:bg-slate-800 bg-amber-500/10 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                    }`}
-                    title="Use Hint (-50 points)"
-                  >
-                    <Lightbulb className={`w-5 h-5 ${!hintUsed && stats.score >= 50 && selectedOption === null && status !== 'paused' ? 'animate-pulse' : ''}`} />
-                  </button>
-                  <div className={`relative flex items-center font-bold px-4 py-2 rounded-2xl border min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
-                    <Clock className="w-5 h-5 mr-2" />
-                    <span className="text-2xl min-w-[2rem] text-right leading-none">{gameTimeLeft}</span><span className={`text-sm ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
+              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-3 sm:p-5 rounded-3xl sm:rounded-[2rem] shadow-2xl border border-white/5 mb-6 sm:mb-8 max-w-xl gap-2 sm:gap-4">
+                <div className="flex shrink-0">
+                  <div className={`relative flex items-center justify-center font-bold px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                    <motion.span 
+                      key={gameTimeLeft}
+                      initial={{ scale: 1.25 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                      className="text-xl sm:text-2xl min-w-[1.5rem] sm:min-w-[2rem] text-right leading-none inline-block origin-right"
+                    >
+                      {gameTimeLeft}
+                    </motion.span>
+                    <span className={`text-xs ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
                     <AnimatePresence>
                       {timeAddedAnim > 0 && (
                         <motion.div
@@ -392,35 +431,48 @@ export default function App() {
                     </AnimatePresence>
                   </div>
                 </div>
-                <div className="flex flex-col items-center flex-1">
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1 flex items-center">
+                <div className="flex flex-col items-center flex-1 min-w-0 mx-1">
+                  <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-1 flex items-center">
                     Score
                   </span>
-                  <div className="flex flex-col items-center justify-center min-h-[44px]">
-                    <span className="font-black text-3xl text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 leading-none drop-shadow-sm">{stats.score.toLocaleString()}</span>
-                    <AnimatePresence>
+                  <div className="flex flex-col items-center justify-center min-h-[36px] sm:min-h-[44px]">
+                    <motion.div
+                      key={stats.score}
+                      initial={{ scale: 1.3, filter: 'brightness(1.5)' }}
+                      animate={{ scale: 1, filter: 'brightness(1)' }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                    >
+                      <span className="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500 leading-none drop-shadow-sm inline-block">
+                        {stats.score.toLocaleString()}
+                      </span>
+                    </motion.div>
+                    <AnimatePresence mode="popLayout">
                       {stats.currentStreak > 1 && (
                         <motion.span 
-                          initial={{ opacity: 0, y: -5, scale: 0.8 }}
+                          key={stats.currentStreak}
+                          initial={{ opacity: 0, y: 10, scale: 0.5 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="text-xs font-bold text-amber-400 mt-1 flex items-center tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+                          exit={{ opacity: 0, scale: 0.5, filter: 'blur(5px)' }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                          className="text-[10px] sm:text-xs font-bold text-amber-400 mt-1 flex items-center tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 whitespace-nowrap"
                         >
-                          <Flame className="w-3 h-3 mr-1" />
-                          {stats.currentStreak}x STREAK
+                          <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 animate-pulse" />
+                          {stats.currentStreak}x <span className="hidden sm:inline ml-1">STREAK</span>
                         </motion.span>
                       )}
                     </AnimatePresence>
                   </div>
                 </div>
-                <div className="flex items-center text-emerald-400 font-bold bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-500/20 min-w-[90px] justify-end shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-                  <Star className="w-5 h-5 mr-2" />
-                  <span className="text-2xl leading-none">{stats.correctGuesses}</span>
+                <div className="flex items-center justify-center shrink-0 text-emerald-400 font-bold bg-emerald-500/10 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-emerald-500/20 min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                  <span className="text-xl sm:text-2xl leading-none inline-block">
+                    {stats.correctGuesses}
+                  </span>
                 </div>
               </div>
 
               {/* Card Display Area */}
-              <div className="relative w-full max-w-xs flex flex-col items-center mb-8 perspective-1000">
+              <div className="relative w-full max-w-[200px] sm:max-w-xs flex flex-col items-center mb-4 sm:mb-8 perspective-1000">
                 <motion.div 
                   initial={{ rotateY: 90, opacity: 0 }}
                   animate={{ rotateY: 0, opacity: 1 }}
@@ -455,7 +507,7 @@ export default function App() {
                           initial={{ scale: 0.5, opacity: 0, y: 20 }}
                           animate={{ scale: 1, opacity: 1, y: 0 }}
                           transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          className={`px-8 py-4 rounded-2xl text-2xl font-black shadow-[0_0_40px_rgba(0,0,0,0.3)] flex items-center border ${
+                          className={`px-4 sm:px-8 py-2 sm:py-4 rounded-xl sm:rounded-2xl text-lg sm:text-2xl font-black shadow-[0_0_40px_rgba(0,0,0,0.3)] flex items-center border ${
                             feedback === 'correct' ? 'bg-emerald-500/90 text-white border-emerald-400' : 'bg-rose-500/90 text-white border-rose-400'
                           }`}
                         >
@@ -468,7 +520,7 @@ export default function App() {
               </div>
 
               {/* Options Grid */}
-              <div className={`grid ${options.length === 6 ? 'grid-cols-3' : 'grid-cols-2'} gap-3 sm:gap-4 w-full ${options.length === 6 ? 'max-w-2xl' : 'max-w-xl'}`}>
+              <div className={`grid ${options.length === 6 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'} gap-2 sm:gap-4 w-full ${options.length === 6 ? 'max-w-2xl' : 'max-w-xl'}`}>
                 {options.map((opt, i) => {
                   const isSelected = selectedOption === opt;
                   const isCorrectAnswer = opt === currentCard.name;
@@ -500,13 +552,53 @@ export default function App() {
                       key={opt}
                       onClick={() => handleGuess(opt)}
                       disabled={selectedOption !== null || status === 'paused' || isEliminated}
-                      className={`relative min-h-[4.5rem] px-3 sm:px-5 py-3 sm:py-4 text-center sm:text-left font-bold text-[13px] sm:text-[14px] leading-snug rounded-2xl border transition-all duration-300 flex items-center justify-center sm:justify-start group overflow-hidden backdrop-blur-md ${btnClass}`}
+                      className={`relative min-h-[3.5rem] sm:min-h-[4.5rem] px-2 sm:px-5 py-2 sm:py-4 text-center sm:text-left font-bold text-[11.5px] sm:text-[14px] leading-tight sm:leading-snug rounded-xl sm:rounded-2xl border transition-all duration-300 flex items-center justify-center sm:justify-start group overflow-hidden backdrop-blur-md ${btnClass} ${status === 'paused' ? 'blur-sm pointer-events-none opacity-50 text-transparent' : ''}`}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
                       <span className="relative z-10 leading-tight block">{opt}</span>
                     </motion.button>
                   );
                 })}
+              </div>
+
+              {/* Added Game Controls Below Options */}
+              <div className="flex gap-1 sm:gap-4 mt-3 sm:mt-8 w-full max-w-xl justify-center">
+                <button 
+                  onClick={() => {
+                    if (status === 'playing') setStatus('paused');
+                    setShowQuitConfirm(true);
+                  }}
+                  disabled={selectedOption !== null}
+                  className={`flex flex-col items-center justify-center transition-colors w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-rose-300 hover:bg-slate-800/50 hover:border-white/5'}`}
+                  title="Quit Game"
+                >
+                  <Home className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />
+                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider">HOME</span>
+                </button>
+                <button 
+                  onClick={togglePause}
+                  disabled={selectedOption !== null}
+                  className={`flex flex-col items-center justify-center transition-colors w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent mx-1 sm:mx-2 ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-indigo-300 hover:bg-slate-800/50 hover:border-white/5'}`}
+                  title="Pause Game"
+                >
+                  {status === 'paused' ? <Play className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ml-1" /> : <Pause className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />}
+                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider">{status === 'paused' ? 'RESUME' : 'PAUSE'}</span>
+                </button>
+                <button 
+                  onClick={useHint}
+                  disabled={hintUsed || stats.score < hintCost || status === 'paused' || selectedOption !== null}
+                  className={`flex flex-col items-center justify-center transition-all w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border group relative ${
+                    hintUsed || stats.score < hintCost || selectedOption !== null
+                      ? 'text-slate-600 bg-slate-900/30 border-white/5 cursor-not-allowed'
+                      : 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 bg-amber-500/5 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.05)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                  }`}
+                  title={`Use Hint (-${hintCost} points)`}
+                >
+                  <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ${!hintUsed && stats.score >= hintCost && selectedOption === null && status !== 'paused' ? 'animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : ''}`} />
+                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider relative z-10 w-full text-center">
+                    {hintUsed ? 'USED' : `-${hintCost}`}
+                  </span>
+                </button>
               </div>
             </motion.div>
           )}
@@ -571,6 +663,145 @@ export default function App() {
         )}
       </AnimatePresence>
       
+      {/* Tutorial Modal */}
+      <AnimatePresence>
+        {showTutorial && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl flex flex-col items-center max-h-[90vh] overflow-y-auto"
+            >
+              <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4 shrink-0">
+                <Lightbulb className="w-8 h-8 text-amber-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 text-center">How to Play</h3>
+              <div className="text-slate-400 mb-6 text-sm space-y-4 text-left w-full">
+                <p>
+                  Guess the card name before the times run out
+                </p>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-slate-200 mb-2 flex items-center justify-start">
+                    <Star className="w-4 h-4 mr-2 text-emerald-400" /> Points System
+                  </h4>
+                  <ul className="list-disc list-outside pl-4 space-y-1 text-slate-300">
+                    <li>Faster correct guesses give more points (up to 100).</li>
+                    <li>Streak multiplier increase the point gain.</li>
+                    <li>Incorrect guesses break your streak.</li>
+                    <li>Every 10x Streak add extra 10 second to the timer.</li>
+                  </ul>
+                </div>
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-slate-200 mb-2 flex items-center justify-start">
+                    <Lightbulb className="w-4 h-4 mr-2 text-amber-400" /> Controls
+                  </h4>
+                  <ul className="space-y-3 text-slate-300">
+                    <li className="flex items-start">
+                      <div className="bg-amber-500/10 p-1.5 rounded-lg mr-3 shrink-0"><Lightbulb className="w-4 h-4 text-amber-400" /></div>
+                      <span><strong>Use Hint:</strong> Remove half of the wrong option at exchange of the point reduction.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="bg-indigo-500/10 p-1.5 rounded-lg mr-3 shrink-0"><Pause className="w-4 h-4 text-indigo-400" /></div>
+                      <span><strong>Pause:</strong> Pause the game.</span>
+                    </li>
+                    <li className="flex items-start">
+                      <div className="bg-rose-500/10 p-1.5 rounded-lg mr-3 shrink-0"><Home className="w-4 h-4 text-rose-400" /></div>
+                      <span><strong>Home:</strong> Back to main menu.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-4 w-full mt-2">
+                <label className="flex items-center gap-2 text-slate-400 text-sm cursor-pointer select-none hover:text-slate-300 transition-colors self-start ml-1">
+                  <input 
+                    type="checkbox" 
+                    checked={dontShowAgain}
+                    onChange={(e) => setDontShowAgain(e.target.checked)}
+                    className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-indigo-500 focus:ring-indigo-500/50 cursor-pointer"
+                  />
+                  <span>Don't show this again</span>
+                </label>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setShowTutorial(false)}
+                    className="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={startNewGameInternal}
+                    className="flex-1 py-3 px-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20"
+                  >
+                    Start Game
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Easter Egg Modal */}
+      <AnimatePresence>
+        {showEasterEgg && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 w-full max-w-sm shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col items-center max-h-[90vh] overflow-y-auto relative overflow-hidden"
+            >
+              <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-slate-900/0 to-slate-900/0"></div>
+              
+              <h3 className="text-xl font-bold text-white mb-2 text-center relative z-10">Whoops... you found the easter egg 🥚</h3>
+              <p className="text-slate-400 mb-6 text-sm text-center relative z-10">also here your reward :</p>
+              
+              <div className="relative w-full aspect-[3/4] mb-6 rounded-xl overflow-hidden group border border-slate-700/50 shadow-lg bg-slate-800">
+                <img 
+                  src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/g451g5sg.webp" 
+                  alt="Easter Egg Reward" 
+                  className={`w-full h-full object-cover transition-all duration-700 ${revealEasterEgg ? 'blur-0 scale-100' : 'blur-xl scale-110 grayscale'}`}
+                  crossOrigin="anonymous"
+                />
+                
+                {!revealEasterEgg && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/30">
+                    <button 
+                      onClick={() => setRevealEasterEgg(true)}
+                      className="bg-slate-900/80 hover:bg-amber-500/20 text-white hover:text-amber-300 border border-white/10 hover:border-amber-500/50 backdrop-blur-md px-6 py-3 rounded-xl font-bold flex items-center transition-all shadow-xl hover:shadow-amber-500/20"
+                    >
+                      <Eye className="w-5 h-5 mr-2" /> REVEAL
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={() => {
+                  setShowEasterEgg(false);
+                  setRevealEasterEgg(false);
+                }}
+                disabled={easterEggCountdown > 0}
+                className={`w-full py-3 px-4 rounded-xl font-bold transition-colors relative z-10 ${easterEggCountdown > 0 ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+              >
+                {easterEggCountdown > 0 ? `Wait ${easterEggCountdown}s` : 'Close'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <footer className="relative z-10 w-full text-center py-4 text-slate-500 text-sm">
         Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">x1101</a>
       </footer>
@@ -580,8 +811,6 @@ export default function App() {
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
       </div>
-      
-      <Analytics />
     </div>
   );
 }

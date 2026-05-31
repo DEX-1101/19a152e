@@ -57,3 +57,11 @@ export const playIncorrectSound = () => {
   osc.start(t);
   osc.stop(t + 0.15);
 };
+
+const swapAudio = new Audio('https://github.com/DEX-1101/czn-unigram/raw/refs/heads/main/asset/send.wav');
+swapAudio.volume = 0.5;
+
+export const playSwapSound = () => {
+  swapAudio.currentTime = 0;
+  swapAudio.play().catch(e => console.warn("Swap sound failed to play", e));
+};
