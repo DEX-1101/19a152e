@@ -1,4 +1,5 @@
 export let audioCtx: AudioContext | null = null;
+let swapAudioBuffer: AudioBuffer | null = null;
 
 export const initAudio = () => {
   try {
@@ -7,6 +8,14 @@ export const initAudio = () => {
     }
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
+    }
+    
+    if (!swapAudioBuffer && audioCtx) {
+      fetch('https://github.com/DEX-1101/czn-unigram/raw/refs/heads/main/asset/send.wav')
+        .then(res => res.arrayBuffer())
+        .then(buf => audioCtx!.decodeAudioData(buf))
+        .then(decoded => { swapAudioBuffer = decoded; })
+        .catch(e => console.warn("Failed to load swap sound buffer", e));
     }
   } catch (e) {
     console.warn("Web Audio API not supported", e);
@@ -62,6 +71,22 @@ const swapAudio = new Audio('https://github.com/DEX-1101/czn-unigram/raw/refs/he
 swapAudio.volume = 0.5;
 
 export const playSwapSound = () => {
-  swapAudio.currentTime = 0;
-  swapAudio.play().catch(e => console.warn("Swap sound failed to play", e));
+  if (audioCtx && swapAudioBuffer) {
+    try {
+      const source = audioCtx.createBufferSource();
+      source.buffer = swapAudioBuffer;
+      const gainNode = audioCtx.createGain();
+      gainNode.gain.value = 0.5;
+      source.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      source.start(0);
+    } catch (e) {
+      console.warn("Buffer play failed, using fallback", e);
+      swapAudio.currentTime = 0;
+      swapAudio.play().catch(err => console.warn("Swap sound failed to play", err));
+    }
+  } else {
+    swapAudio.currentTime = 0;
+    swapAudio.play().catch(e => console.warn("Swap sound failed to play", e));
+  }
 };

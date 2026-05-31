@@ -6,7 +6,7 @@ import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from '
 import { shuffleArray } from './lib/utils';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
-import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb, Eye } from 'lucide-react';
+import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb, Eye, Gamepad2 } from 'lucide-react';
 
 type GameStatus = 'start' | 'playing' | 'paused' | 'end';
 
@@ -400,7 +400,7 @@ export default function App() {
               className="w-full max-w-2xl flex flex-col items-center"
             >
               {/* HUD */}
-              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-3 sm:p-5 rounded-3xl sm:rounded-[2rem] shadow-2xl border border-white/5 mb-6 sm:mb-8 max-w-xl gap-2 sm:gap-4">
+              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-3 sm:p-5 rounded-3xl sm:rounded-[2rem] shadow-2xl border border-white/5 mb-3 sm:mb-6 max-w-xl gap-2 sm:gap-4">
                 <div className="flex shrink-0">
                   <div className={`relative flex items-center justify-center font-bold px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
@@ -472,7 +472,7 @@ export default function App() {
               </div>
 
               {/* Card Display Area */}
-              <div className="relative w-full max-w-[200px] sm:max-w-xs flex flex-col items-center mb-4 sm:mb-8 perspective-1000">
+              <div className="relative w-full max-w-[200px] sm:max-w-xs flex flex-col items-center mb-3 sm:mb-5 perspective-1000">
                 <motion.div 
                   initial={{ rotateY: 90, opacity: 0 }}
                   animate={{ rotateY: 0, opacity: 1 }}
@@ -562,7 +562,7 @@ export default function App() {
               </div>
 
               {/* Added Game Controls Below Options */}
-              <div className="flex gap-1 sm:gap-4 mt-3 sm:mt-8 w-full max-w-xl justify-center">
+              <div className="flex gap-1 sm:gap-4 mt-3 sm:mt-5 w-full max-w-xl justify-center">
                 <button 
                   onClick={() => {
                     if (status === 'playing') setStatus('paused');
@@ -683,8 +683,8 @@ export default function App() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2 text-center">How to Play</h3>
               <div className="text-slate-400 mb-6 text-sm space-y-4 text-left w-full">
-                <p>
-                  Guess the card name before the times run out
+                <p className="text-center">
+                  Guess the card name before the times run out.
                 </p>
                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                   <h4 className="font-bold text-slate-200 mb-2 flex items-center justify-start">
@@ -699,7 +699,7 @@ export default function App() {
                 </div>
                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                   <h4 className="font-bold text-slate-200 mb-2 flex items-center justify-start">
-                    <Lightbulb className="w-4 h-4 mr-2 text-amber-400" /> Controls
+                    <Gamepad2 className="w-4 h-4 mr-2 text-indigo-400" /> Controls
                   </h4>
                   <ul className="space-y-3 text-slate-300">
                     <li className="flex items-start">
@@ -802,9 +802,11 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className="relative z-10 w-full text-center py-4 text-slate-500 text-sm">
-        Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">x1101</a>
-      </footer>
+      {(status === 'start' || status === 'end') && (
+        <footer className="relative z-10 w-full text-center py-4 text-slate-500 text-sm">
+          Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">Someone who refuses to read the card, then makes a Reddit post: 'wHy gAmE bUg?'</a>
+        </footer>
+      )}
 
       {/* Background decoration for Dark Mode */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
