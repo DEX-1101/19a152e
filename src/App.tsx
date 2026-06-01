@@ -370,7 +370,7 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full flex-grow flex items-center justify-center p-4">
+      <main className="relative z-10 w-full flex-grow flex flex-col items-center justify-center p-2 sm:p-4 min-h-0">
         <AnimatePresence mode="wait">
           {status === 'start' && (
             <StartScreen 
@@ -397,10 +397,10 @@ export default function App() {
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-2xl flex flex-col items-center"
+              className="w-full max-w-2xl h-[calc(100dvh-3rem)] sm:h-[calc(100dvh-5rem)] flex flex-col items-center justify-between"
             >
               {/* HUD */}
-              <div className="w-full flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-3 sm:p-5 rounded-3xl sm:rounded-[2rem] shadow-2xl border border-white/5 mb-3 sm:mb-6 max-w-xl gap-2 sm:gap-4">
+              <div className="w-full shrink-0 flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-2 sm:p-5 rounded-2xl sm:rounded-[2rem] shadow-2xl border border-white/5 max-w-xl gap-2 sm:gap-4">
                 <div className="flex shrink-0">
                   <div className={`relative flex items-center justify-center font-bold px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
@@ -472,13 +472,13 @@ export default function App() {
               </div>
 
               {/* Card Display Area */}
-              <div className="relative w-full max-w-[200px] sm:max-w-xs flex flex-col items-center mb-3 sm:mb-5 perspective-1000">
+              <div className="relative w-full flex-grow flex items-center justify-center my-2 sm:my-4 min-h-[150px] overflow-hidden">
                 <motion.div 
                   initial={{ rotateY: 90, opacity: 0 }}
                   animate={{ rotateY: 0, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
                   key={currentCard.name}
-                  className={`relative w-full aspect-[353/523] bg-slate-900 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden group border-2 border-white/10 ${status === 'paused' ? 'blur-md grayscale' : ''}`}
+                  className={`relative max-w-full max-h-full aspect-[353/523] bg-slate-900 rounded-[1.5rem] sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden group border-2 border-white/10 shrink-0 ${status === 'paused' ? 'blur-md grayscale' : ''}`}
                 >
                   <img 
                     src={currentCard.imageUrl} 
@@ -520,7 +520,7 @@ export default function App() {
               </div>
 
               {/* Options Grid */}
-              <div className={`grid ${options.length === 6 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'} gap-2 sm:gap-4 w-full ${options.length === 6 ? 'max-w-2xl' : 'max-w-xl'}`}>
+              <div className={`grid shrink-0 w-full ${options.length === 6 ? 'grid-cols-2 sm:grid-cols-3 max-w-2xl gap-1.5 sm:gap-4' : 'grid-cols-2 max-w-xl gap-2 sm:gap-4'}`}>
                 {options.map((opt, i) => {
                   const isSelected = selectedOption === opt;
                   const isCorrectAnswer = opt === currentCard.name;
@@ -552,7 +552,7 @@ export default function App() {
                       key={opt}
                       onClick={() => handleGuess(opt)}
                       disabled={selectedOption !== null || status === 'paused' || isEliminated}
-                      className={`relative min-h-[3.5rem] sm:min-h-[4.5rem] px-2 sm:px-5 py-2 sm:py-4 text-center sm:text-left font-bold text-[11.5px] sm:text-[14px] leading-tight sm:leading-snug rounded-xl sm:rounded-2xl border transition-all duration-300 flex items-center justify-center sm:justify-start group overflow-hidden backdrop-blur-md ${btnClass} ${status === 'paused' ? 'blur-sm pointer-events-none opacity-50 text-transparent' : ''}`}
+                      className={`relative min-h-[3rem] sm:min-h-[4.5rem] px-2 sm:px-5 py-2 sm:py-4 text-center sm:text-left font-bold text-[10.5px] sm:text-[14px] leading-tight sm:leading-snug rounded-xl sm:rounded-2xl border transition-all duration-300 flex items-center justify-center sm:justify-start group overflow-hidden backdrop-blur-md ${btnClass} ${status === 'paused' ? 'blur-sm pointer-events-none opacity-50 text-transparent' : ''}`}
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
                       <span className="relative z-10 leading-tight block">{opt}</span>
@@ -562,40 +562,40 @@ export default function App() {
               </div>
 
               {/* Added Game Controls Below Options */}
-              <div className="flex gap-1 sm:gap-4 mt-3 sm:mt-5 w-full max-w-xl justify-center">
+              <div className="flex shrink-0 gap-2 sm:gap-4 mt-2 sm:mt-5 w-full max-w-xl justify-center">
                 <button 
                   onClick={() => {
                     if (status === 'playing') setStatus('paused');
                     setShowQuitConfirm(true);
                   }}
                   disabled={selectedOption !== null}
-                  className={`flex flex-col items-center justify-center transition-colors w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-rose-300 hover:bg-slate-800/50 hover:border-white/5'}`}
+                  className={`flex flex-col items-center justify-center transition-colors w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-rose-300 hover:bg-slate-800/50 hover:border-white/5'}`}
                   title="Quit Game"
                 >
-                  <Home className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />
-                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider">HOME</span>
+                  <Home className="w-4 h-4 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />
+                  <span className="text-[8px] sm:text-[10px] font-bold tracking-wider">HOME</span>
                 </button>
                 <button 
                   onClick={togglePause}
                   disabled={selectedOption !== null}
-                  className={`flex flex-col items-center justify-center transition-colors w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent mx-1 sm:mx-2 ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-indigo-300 hover:bg-slate-800/50 hover:border-white/5'}`}
+                  className={`flex flex-col items-center justify-center transition-colors w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-transparent mx-1 sm:mx-2 ${selectedOption !== null ? 'text-slate-600 opacity-50 cursor-not-allowed' : 'text-slate-400 hover:text-indigo-300 hover:bg-slate-800/50 hover:border-white/5'}`}
                   title="Pause Game"
                 >
-                  {status === 'paused' ? <Play className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ml-1" /> : <Pause className="w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />}
-                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider">{status === 'paused' ? 'RESUME' : 'PAUSE'}</span>
+                  {status === 'paused' ? <Play className="w-4 h-4 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ml-1" /> : <Pause className="w-4 h-4 sm:w-6 sm:h-6 mb-0.5 sm:mb-1" />}
+                  <span className="text-[8px] sm:text-[10px] font-bold tracking-wider">{status === 'paused' ? 'RESUME' : 'PAUSE'}</span>
                 </button>
                 <button 
                   onClick={useHint}
                   disabled={hintUsed || stats.score < hintCost || status === 'paused' || selectedOption !== null}
-                  className={`flex flex-col items-center justify-center transition-all w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border group relative ${
+                  className={`flex flex-col items-center justify-center transition-all w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border group relative ${
                     hintUsed || stats.score < hintCost || selectedOption !== null
                       ? 'text-slate-600 bg-slate-900/30 border-white/5 cursor-not-allowed'
                       : 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 bg-amber-500/5 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.05)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)]'
                   }`}
                   title={`Use Hint (-${hintCost} points)`}
                 >
-                  <Lightbulb className={`w-5 h-5 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ${!hintUsed && stats.score >= hintCost && selectedOption === null && status !== 'paused' ? 'animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : ''}`} />
-                  <span className="text-[9px] sm:text-[10px] font-bold tracking-wider relative z-10 w-full text-center">
+                  <Lightbulb className={`w-4 h-4 sm:w-6 sm:h-6 mb-0.5 sm:mb-1 ${!hintUsed && stats.score >= hintCost && selectedOption === null && status !== 'paused' ? 'animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]' : ''}`} />
+                  <span className="text-[8px] sm:text-[10px] font-bold tracking-wider relative z-10 w-full text-center">
                     {hintUsed ? 'USED' : `-${hintCost}`}
                   </span>
                 </button>
