@@ -117,14 +117,17 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                     }
                   >
                     <div className="flex flex-row items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-inner shrink-0 ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : index === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/30' : index === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' : 'bg-slate-900 text-slate-400 border border-slate-700'}`}>
-                        {index === 0 ? <Crown className="w-5 h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" /> : 
-                         index === 1 ? <Medal className="w-5 h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)]" /> :
-                         index === 2 ? <Award className="w-5 h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]" /> : 
-                         index + 1}
+                      <div className={`w-10 h-10 rounded-full flex gap-1 items-center justify-center font-black text-lg shadow-inner shrink-0 ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : index === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/30' : index === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' : 'bg-slate-900 text-slate-400 border border-slate-700'}`}>
+                        {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className={`font-bold truncate ${index < 3 ? 'text-white text-lg' : 'text-slate-300 text-base'}`}>{entry.name}</div>
+                        <div className="flex items-center gap-2">
+                           {index === 0 ? <Crown className="w-5 h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] shrink-0" /> : 
+                            index === 1 ? <Medal className="w-5 h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)] shrink-0" /> :
+                            index === 2 ? <Award className="w-5 h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" /> : 
+                            null}
+                          <div className={`font-bold truncate ${index < 3 ? 'text-white text-lg' : 'text-slate-300 text-base'}`}>{entry.name}</div>
+                        </div>
                         {entry.id === playerId && <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">You</div>}
                       </div>
                       <div className={`font-black text-right ${index === 0 ? 'text-amber-400 text-3xl' : index < 3 ? 'text-white text-2xl' : 'text-slate-400 text-xl'}`}>
