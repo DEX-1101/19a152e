@@ -628,6 +628,7 @@ export default function App() {
                     src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
                     alt=""
                     className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+                    crossOrigin="anonymous"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
                   
