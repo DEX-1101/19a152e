@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Analytics } from '@vercel/analytics/react';
 import { CardData, GameStats, BestScoreData, HistoryEntry } from './types';
 import { fetchCards } from './lib/api';
 import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from './lib/audio';
 import { shuffleArray } from './lib/utils';
 import { StartScreen } from './components/StartScreen';
 import { GameOverScreen } from './components/GameOverScreen';
+import { LeaderboardModal } from './components/LeaderboardModal';
 import { Clock, Star, Image as ImageIcon, Flame, Pause, Play, Home, Lightbulb, Eye, Gamepad2 } from 'lucide-react';
 
 type GameStatus = 'start' | 'playing' | 'paused' | 'end';
@@ -39,6 +39,16 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState<GameStatus>('start');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem('czn_player_name') || '');
+  const [playerId] = useState(() => {
+    let id = localStorage.getItem('czn_player_id');
+    if (!id) {
+      id = 'user_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+      localStorage.setItem('czn_player_id', id);
+    }
+    return id;
+  });
   const [isPreloadingImages, setIsPreloadingImages] = useState(false);
   const [preloadProgress, setPreloadProgress] = useState(0);
   const preloadedUrls = React.useRef<Set<string>>(new Set());
@@ -504,6 +514,13 @@ export default function App() {
               onDeleteBestScore={deleteBestScore}
               history={history}
               cards={cards}
+              playerName={playerName}
+              playerId={playerId}
+              setPlayerName={(name: string) => {
+                setPlayerName(name);
+                localStorage.setItem('czn_player_name', name);
+              }}
+              onViewLeaderboard={() => setShowLeaderboard(true)}
             />
           )}
 
@@ -752,6 +769,9 @@ export default function App() {
               numOptions={numOptions}
               customTime={customTime}
               pools={pools}
+              playerName={playerName}
+              playerId={playerId}
+              onViewLeaderboard={() => setShowLeaderboard(true)}
             />
           )}
         </AnimatePresence>
@@ -952,12 +972,18 @@ export default function App() {
         </footer>
       )}
 
+      {/* Global Leaderboard Modal Render */}
+      <LeaderboardModal 
+         isOpen={showLeaderboard}
+         onClose={() => setShowLeaderboard(false)}
+         playerId={playerId}
+      />
+
       {/* Background decoration for Dark Mode */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
       </div>
-      <Analytics />
     </div>
   );
 }

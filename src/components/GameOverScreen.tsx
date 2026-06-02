@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { RefreshCcw, Trophy, Target, Flame, Sparkles, Home } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { RefreshCcw, Trophy, Target, Flame, Home, Send, Loader2, Globe, Check, X, Sparkles } from 'lucide-react';
 import { GameStats, BestScoreData } from '../types';
 
 interface GameOverScreenProps {
@@ -12,9 +12,56 @@ interface GameOverScreenProps {
   numOptions: number;
   customTime: number;
   pools: { character?: boolean; neutral?: boolean; monster?: boolean; other?: boolean };
+  playerName: string;
+  playerId: string;
+  onViewLeaderboard: () => void;
 }
 
-export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart, bestScore, isNewHighScore, onHome, numOptions, customTime, pools }) => {
+export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart, bestScore, isNewHighScore, onHome, numOptions, customTime, pools, playerName, playerId, onViewLeaderboard }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [rankAchieved, setRankAchieved] = useState<number | null>(null);
+
+  const submitScoreAutomatically = React.useCallback(async () => {
+    if (!playerId || stats.score === 0 || isSubmitting || submitSuccess) return;
+    if (!isNewHighScore) return;
+    
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          id: playerId,
+          name: playerName.trim() || 'Anonymous Player', 
+          score: stats.score,
+          maxStreak: stats.maxStreak,
+          customTime,
+          numOptions,
+          pools
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit');
+      setSubmitSuccess(true);
+      if (data.rank > 0 && data.rank <= 50) {
+        setRankAchieved(data.rank);
+      }
+    } catch (e: any) {
+      setSubmitError(e.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [playerId, playerName, stats, customTime, numOptions, pools, isSubmitting, submitSuccess, isNewHighScore]);
+
+  React.useEffect(() => {
+    submitScoreAutomatically();
+  }, [submitScoreAutomatically]);
+
   const accuracy = stats.totalGuesses > 0 
     ? Math.round((stats.correctGuesses / stats.totalGuesses) * 100) 
     : 0;
@@ -124,6 +171,59 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
           </div>
         </motion.div>
       </div>
+
+      {isNewHighScore && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.65 }}
+          className="w-full mb-6 relative group"
+        >
+          <button
+            onClick={onViewLeaderboard}
+            className={`w-full relative overflow-hidden bg-slate-800 border ${submitSuccess ? 'border-amber-500/50 hover:bg-slate-700/80 hover:border-amber-500' : submitError ? 'border-rose-500/50 hover:bg-slate-700/80 hover:border-rose-500' : 'border-slate-700 hover:bg-slate-700 hover:border-slate-500'} p-4 rounded-2xl flex items-center justify-between transition-all shadow-md group-hover:shadow-lg`}
+          >
+             <div className="flex flex-col items-start gap-1">
+               <div className="flex items-center text-white font-bold tracking-wide">
+                 <Globe className="w-5 h-5 mr-3 text-amber-400" /> Global Ranking
+               </div>
+               {rankAchieved && (
+                 <div className="text-[11px] text-amber-400/90 font-bold ml-8">
+                   You placed Rank #{rankAchieved}!
+                 </div>
+               )}
+             </div>
+             
+             <div className="flex items-center shrink-0">
+               {isSubmitting ? (
+                 <div className="flex items-center text-indigo-400 text-sm font-bold">
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Syncing...
+                 </div>
+               ) : submitSuccess ? (
+                 <div className="flex items-center text-emerald-400 text-sm font-bold">
+                    <Check className="w-5 h-5 mr-1" /> Saved
+                 </div>
+               ) : submitError ? (
+                 <div className="flex items-center text-rose-400 text-sm font-bold" title={submitError}>
+                    <X className="w-5 h-5 mr-1" /> Failed 
+                 </div>
+               ) : null}
+             </div>
+             
+             {isSubmitting && (
+               <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-900 overflow-hidden rounded-b-2xl">
+                 <motion.div 
+                   className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]" 
+                   initial={{ x: '-100%' }}
+                   animate={{ x: '300%' }}
+                   transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                   style={{ width: '30%' }}
+                 />
+               </div>
+             )}
+          </button>
+        </motion.div>
+      )}
 
       <div className="flex gap-4 w-full">
         <motion.button

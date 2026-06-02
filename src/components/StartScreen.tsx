@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, Trash2, History, Eye } from 'lucide-react';
+import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, History, Eye, Globe, User, Check, X, Pencil, Crown, Medal, Award, Hexagon } from 'lucide-react';
 import { BestScoreData, HistoryEntry, CardData } from '../types';
+
+interface LeaderboardEntry {
+  id: string;
+  name: string;
+  score: number;
+  maxStreak?: number;
+  customTime?: number;
+  numOptions?: number;
+  pools?: { character?: boolean; neutral?: boolean; monster?: boolean; other?: boolean };
+}
 
 interface StartScreenProps {
   onStart: () => void;
@@ -18,16 +28,43 @@ interface StartScreenProps {
   onDeleteBestScore: () => void;
   history: HistoryEntry[];
   cards: CardData[];
+  playerName: string;
+  playerId: string;
+  setPlayerName: (name: string) => void;
+  onViewLeaderboard: () => void;
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore, onDeleteBestScore, history, cards }) => {
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore, onDeleteBestScore, history, cards, playerName, playerId, setPlayerName, onViewLeaderboard }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [zoomedCard, setZoomedCard] = useState<CardData | null>(null);
 
+  const [isEditingName, setIsEditingName] = useState(!playerName);
+  const [tempName, setTempName] = useState(playerName);
+  const [top3, setTop3] = useState<LeaderboardEntry[]>([]);
+  const [isLoadingTop3, setIsLoadingTop3] = useState(false);
+
+  const fetchTop3 = React.useCallback(async () => {
+    setIsLoadingTop3(true);
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      if (data.leaderboard) {
+        setTop3(data.leaderboard.slice(0, 3));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingTop3(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTop3();
+  }, [fetchTop3]);
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.95, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -73,6 +110,86 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         A fan-made Chaos Zero Nightmare card guessing game. All asset used are belong to Smilegate and Super Creative.
       </motion.p>
 
+      {/* Player Profile Section */}
+      <motion.div
+         initial={{ opacity: 0, scale: 0.9 }}
+         animate={{ opacity: 1, scale: 1 }}
+         transition={{ delay: 0.2 }}
+         className="mb-4 flex flex-col items-center justify-center p-4 bg-slate-800/40 border border-indigo-500/20 rounded-2xl w-full relative"
+      >
+        <div className="flex items-center text-indigo-400 mb-2">
+           <User className="w-4 h-4 mr-2" />
+           <span className="font-bold uppercase tracking-widest text-xs">Player Profile</span>
+        </div>
+        {isEditingName ? (
+          <div className="flex w-full max-w-xs items-center gap-2">
+            <input 
+              type="text" 
+              value={tempName}
+              onChange={(e) => setTempName(e.target.value)}
+              placeholder="Enter name for Ranking..."
+              maxLength={15}
+              className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors shadow-inner"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && tempName.trim()) {
+                  const newName = tempName.trim();
+                  setPlayerName(newName);
+                  setIsEditingName(false);
+                  fetch('/api/leaderboard/name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: playerId, name: newName })
+                  }).then(() => fetchTop3()).catch(console.error);
+                }
+              }}
+              autoFocus
+            />
+            <button 
+              onClick={() => {
+                if (tempName.trim()) {
+                  const newName = tempName.trim();
+                  setPlayerName(newName);
+                  setIsEditingName(false);
+                  fetch('/api/leaderboard/name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: playerId, name: newName })
+                  }).then(() => fetchTop3()).catch(console.error);
+                }
+              }}
+              className="p-2 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white transition-colors"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            {playerName && (
+              <button 
+                onClick={() => {
+                  setTempName(playerName);
+                  setIsEditingName(false);
+                }}
+                className="p-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 bg-slate-900/50 px-5 py-2.5 rounded-full border border-slate-700/50 shadow-sm group">
+            <span className="text-base font-bold text-slate-200 tracking-wide">{playerName}</span>
+            <button 
+              onClick={() => {
+                setTempName(playerName);
+                setIsEditingName(true);
+              }} 
+              className="text-indigo-400 hover:text-indigo-300 ml-2 transition-colors opacity-80 hover:opacity-100 p-1.5 bg-indigo-500/10 hover:bg-indigo-500/30 rounded-full"
+              title="Change Name"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </motion.div>
+
       {bestScore && bestScore.score > 0 && (
         <motion.div
            initial={{ opacity: 0, scale: 0.8 }}
@@ -81,34 +198,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
            className="mb-8 flex flex-col items-center justify-center p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-full relative group min-h-[220px]"
         >
           <AnimatePresence mode="wait">
-            {showConfirmDelete ? (
-              <motion.div
-                key="confirm"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex flex-col items-center justify-center w-full h-full py-2"
-              >
-                <div className="text-amber-500 font-bold mb-4 text-lg">Delete Best Score & History?</div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setShowConfirmDelete(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors font-semibold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDeleteBestScore();
-                      setShowConfirmDelete(false);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-rose-500/80 text-white hover:bg-rose-500 transition-colors font-semibold shadow-[0_0_15px_rgba(244,63,94,0.3)]"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
               <motion.div
                 key="stats"
                 initial={{ opacity: 0 }}
@@ -116,14 +205,6 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center w-full"
               >
-                <button
-                  onClick={() => setShowConfirmDelete(true)}
-                  className="absolute top-3 right-3 text-amber-500/50 hover:text-rose-400 bg-amber-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-rose-500/30 focus:opacity-100 outline-none"
-                  title="Delete Best Score & History"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                
                 {history.length > 0 && (
                   <button
                     onClick={() => setShowHistory(true)}
@@ -164,10 +245,85 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                    </div>
                 </div>
               </motion.div>
-            )}
           </AnimatePresence>
         </motion.div>
       )}
+
+      {/* Top 3 Leaderboard Preview */}
+      <motion.div
+         initial={{ opacity: 0, y: 10 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ delay: 0.3, duration: 0.5 }}
+         className="w-full mb-8"
+      >
+        <div className="bg-slate-800/40 border border-indigo-500/20 rounded-2xl p-4 flex flex-col w-full relative">
+          <div className="flex items-center justify-center mb-3 border-b border-white/5 pb-2 relative">
+            <div className="flex items-center text-indigo-400 font-bold uppercase tracking-widest text-xs">
+              <Globe className="w-4 h-4 mr-2" /> Ranking Leaderboard
+            </div>
+            <button
+               onClick={fetchTop3}
+               disabled={isLoadingTop3}
+               className="absolute right-0 text-slate-400 hover:text-indigo-400 transition-colors disabled:opacity-50"
+               title="Refresh Leaderboard"
+            >
+               <RefreshCw className={`w-4 h-4 ${isLoadingTop3 ? 'animate-spin text-indigo-400' : ''}`} />
+            </button>
+          </div>
+          
+          <div className="space-y-2 mb-3">
+            {isLoadingTop3 ? (
+              <div className="flex items-center justify-center py-4 text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                <span className="text-sm">Loading Ranks...</span>
+              </div>
+            ) : top3.length > 0 ? (
+              top3.map((entry, index) => (
+                <div key={index} className="flex items-center justify-between bg-slate-900/40 rounded-xl p-2.5 border border-slate-700/50">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-slate-800 border border-slate-700/80">
+                      {index === 0 ? <Crown className="w-4 h-4 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" /> :
+                       index === 1 ? <Medal className="w-4 h-4 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)]" /> :
+                       <Award className="w-4 h-4 text-amber-700 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]" />}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-sm font-bold truncate ${index === 0 ? 'text-white' : 'text-slate-300'}`}>{entry.name}</span>
+                        {entry.id === playerId && <span className="px-1 py-0.5 rounded text-[8px] bg-indigo-500/20 text-indigo-300 uppercase font-black border border-indigo-500/30 shrink-0">You</span>}
+                      </div>
+                      <div className="flex bg-slate-900/50 p-1.5 rounded w-max mt-1 gap-2 items-center flex-wrap text-[9px] text-slate-500 font-medium">
+                        {entry.customTime !== undefined && <span className="flex items-center"><Clock className="w-2.5 h-2.5 mr-0.5" />{entry.customTime}s</span>}
+                        {entry.numOptions !== undefined && <span className="flex items-center"><CheckSquare className="w-2.5 h-2.5 mr-0.5" />{entry.numOptions}opt</span>}
+                        {entry.maxStreak !== undefined && <span className="flex items-center"><Flame className="w-2.5 h-2.5 mr-0.5 text-rose-500/70" />{entry.maxStreak}</span>}
+                        {entry.pools !== undefined && (
+                           <span className="flex items-center">
+                             <Hexagon className="w-2.5 h-2.5 mr-0.5 text-indigo-400" /> 
+                             {(entry.pools.character && entry.pools.neutral && entry.pools.monster && entry.pools.other) ? 'ALL' : [entry.pools.character && 'CH', entry.pools.neutral && 'NE', entry.pools.monster && 'MO', entry.pools.other && 'OT'].filter(Boolean).join(',')}
+                           </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`font-black tracking-tight shrink-0 pl-2 ${index === 0 ? 'text-amber-400 text-lg' : 'text-white text-base'}`}>
+                    {entry.score.toLocaleString()}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-sm text-slate-500">
+                No scores yet. Play to rank!
+              </div>
+            )}
+          </div>
+          
+          <button
+            onClick={onViewLeaderboard}
+            className="w-full py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-400 font-bold text-xs flex items-center justify-center transition-colors"
+          >
+            Expand Ranking
+          </button>
+        </div>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -257,9 +413,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
         className="flex flex-col items-center gap-4 w-full"
       >
         <button
-          onClick={onStart}
+          onClick={() => {
+            if (!playerName.trim()) {
+              setIsEditingName(true);
+              return;
+            }
+            onStart();
+          }}
           disabled={isLoading || totalCards < 2}
-          className="w-full group relative inline-flex items-center justify-center px-8 py-5 font-bold text-white transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] focus:outline-none hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+          className={`w-full group relative inline-flex items-center justify-center px-8 py-5 font-bold text-white transition-all duration-300 ${!playerName.trim() ? 'bg-gradient-to-r from-rose-500 to-pink-600 shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:shadow-[0_0_30px_rgba(244,63,94,0.5)]' : 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]'} rounded-2xl focus:outline-none hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden`}
         >
           <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-500 ease-in-out"></div>
           {isLoading ? (
@@ -267,6 +429,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
               <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-200" />
               <span className="relative z-10">Loading Cards...</span>
             </>
+          ) : !playerName.trim() ? (
+            <span className="relative z-10 flex items-center">
+              <User className="w-5 h-5 mr-3" />
+              Set Player Name to Play
+            </span>
           ) : (
             <span className="relative z-10 flex items-center">
               Start Game
@@ -277,11 +444,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           )}
         </button>
 
-        <div className="w-full flex gap-3">
+        <div className="w-full flex gap-3 flex-wrap">
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex-[2] flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
+            className="flex-1 flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
             Update Card Pool
