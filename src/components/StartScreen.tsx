@@ -396,11 +396,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                           alt={c.name} 
                           className="w-full h-full object-fill select-none pointer-events-none transition-transform duration-700 ease-out group-hover:scale-110 scale-[1.05]"
                           loading="lazy"
+                          crossOrigin="anonymous"
                         />
                         <img
                           src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
                           alt=""
                           className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+                          crossOrigin="anonymous"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-end justify-center pb-4">
                           <Eye className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-2 group-hover:translate-y-0 w-6 h-6 drop-shadow-md" />
@@ -436,11 +438,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                  src={zoomedCard.imageUrl} 
                  alt={zoomedCard.name} 
                  className="w-full h-full object-fill select-none pointer-events-none scale-[1.05]"
+                 crossOrigin="anonymous"
                />
                <img
                  src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
                  alt=""
                  className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+                 crossOrigin="anonymous"
                />
                <div className="absolute top-4 right-4 z-20">
                  <button onClick={() => setZoomedCard(null)} className="p-2 bg-black/50 hover:bg-black/80 rounded-full text-white/70 hover:text-white transition-colors backdrop-blur-md">
