@@ -60,11 +60,23 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 w-full max-w-sm sm:max-w-md shadow-[0_0_40px_rgba(245,158,11,0.2)] flex flex-col max-h-[85vh] overflow-hidden relative"
+            className="bg-slate-900 border border-amber-500/30 rounded-3xl p-4 sm:p-6 w-[95vw] max-w-lg md:max-w-xl shadow-[0_0_40px_rgba(245,158,11,0.2)] flex flex-col max-h-[85vh] overflow-hidden relative"
           >
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5 relative">
-              <div className="flex items-center text-white text-2xl font-black tracking-tight" onClick={fetchLeaderboard}>
-                <Globe className="w-6 h-6 mr-3 text-amber-400" /> Ranking
+            <div className="flex items-center justify-between mb-4 sm:mb-6 pb-4 border-b border-white/5 relative">
+              <div className="flex items-center text-xl sm:text-2xl font-black tracking-tight cursor-pointer" onClick={fetchLeaderboard}>
+                <motion.div
+                  animate={{ color: ['#818cf8', '#c084fc', '#22d3ee', '#818cf8'] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                >
+                  <Globe className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 shrink-0" />
+                </motion.div>
+                <motion.span 
+                  className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#818cf8,#c084fc,#22d3ee,#818cf8)] bg-[length:200%_auto]"
+                  animate={{ backgroundPosition: ['0% center', '200% center'] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                >
+                  Global Leaderboard
+                </motion.span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -88,7 +100,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
               {leaderboardLoading ? (
                 <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                   <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-500" />
-                  <span className="font-medium animate-pulse">Syncing Rank...</span>
+                  <span className="font-medium animate-pulse">Syncing Leaderboard...</span>
                 </div>
               ) : leaderboardConfigured === false ? (
                 <div className="bg-rose-500/10 border border-rose-500/30 p-5 rounded-2xl text-left">
@@ -109,52 +121,52 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 </div>
               ) : (
                 leaderboard.map((entry, index) => (
-                  <div key={index} className={`rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden group transition-all ${index < 3 ? 'bg-gradient-to-r border-t border-b' : 'bg-slate-800/40 border border-slate-700/40'}`}
+                  <div key={index} className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col gap-2 relative overflow-hidden group transition-all ${index < 3 ? 'bg-gradient-to-r border-t border-b' : 'bg-slate-800/40 border border-slate-700/40'}`}
                     style={
                       index === 0 ? { backgroundImage: 'linear-gradient(to right, rgba(251,191,36,0.1), rgba(217,119,6,0.05))', borderColor: 'rgba(251,191,36,0.2)' } :
                       index === 1 ? { backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.1), rgba(100,116,139,0.05))', borderColor: 'rgba(148,163,184,0.2)' } :
                       index === 2 ? { backgroundImage: 'linear-gradient(to right, rgba(180,83,9,0.15), rgba(120,53,15,0.05))', borderColor: 'rgba(180,83,9,0.2)' } : {}
                     }
                   >
-                    <div className="flex flex-row items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex gap-1 items-center justify-center font-black text-lg shadow-inner shrink-0 ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : index === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/30' : index === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' : 'bg-slate-900 text-slate-400 border border-slate-700'}`}>
+                    <div className="flex flex-row items-center gap-2 sm:gap-4">
+                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-black text-base sm:text-lg shadow-inner shrink-0 ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : index === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/30' : index === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' : 'bg-slate-900 text-slate-400 border border-slate-700'}`}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                           {index === 0 ? <Crown className="w-5 h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] shrink-0" /> : 
-                            index === 1 ? <Medal className="w-5 h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)] shrink-0" /> :
-                            index === 2 ? <Award className="w-5 h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" /> : 
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                           {index === 0 ? <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] shrink-0" /> : 
+                            index === 1 ? <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)] shrink-0" /> :
+                            index === 2 ? <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" /> : 
                             null}
-                          <div className={`font-bold truncate ${index < 3 ? 'text-white text-lg' : 'text-slate-300 text-base'}`}>{entry.name}</div>
+                          <div className={`font-bold truncate ${index < 3 ? 'text-white text-base sm:text-lg' : 'text-slate-300 text-sm sm:text-base'}`}>{entry.name}</div>
                         </div>
-                        {entry.id === playerId && <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">You</div>}
+                        {entry.id === playerId && <div className="text-[9px] sm:text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">You</div>}
                       </div>
-                      <div className={`font-black text-right ${index === 0 ? 'text-amber-400 text-3xl' : index < 3 ? 'text-white text-2xl' : 'text-slate-400 text-xl'}`}>
+                      <div className={`font-black text-right shrink-0 ${index === 0 ? 'text-amber-400 text-2xl sm:text-3xl' : index < 3 ? 'text-white text-xl sm:text-2xl' : 'text-slate-400 text-lg sm:text-xl'}`}>
                         {entry.score.toLocaleString()}
                       </div>
                     </div>
                     {/* Add options metadata */}
                     {(entry.maxStreak !== undefined || entry.customTime !== undefined) && (
-                      <div className="flex flex-wrap gap-2 mt-1 ml-[56px] text-[10px] font-medium text-slate-400">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1 ml-10 sm:ml-[56px] text-[9px] sm:text-[10px] font-medium text-slate-400">
                         {entry.customTime !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Clock className="w-3 h-3" /> {entry.customTime}s
+                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                             <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {entry.customTime}s
                            </div>
                         )}
                         {entry.numOptions !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <CheckSquare className="w-3 h-3" /> {entry.numOptions} opts
+                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                             <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {entry.numOptions} opts
                            </div>
                         )}
                         {entry.maxStreak !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Flame className="w-3 h-3 text-rose-500" /> {entry.maxStreak} streak
+                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                             <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-500" /> {entry.maxStreak} streak
                            </div>
                         )}
                         {entry.pools !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Hexagon className="w-3 h-3 text-indigo-400" /> 
+                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                             <Hexagon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400" /> 
                              {(entry.pools.character && entry.pools.neutral && entry.pools.monster && entry.pools.other) ? 'ALL' : [entry.pools.character && 'CH', entry.pools.neutral && 'NE', entry.pools.monster && 'MO', entry.pools.other && 'OT'].filter(Boolean).join(',')}
                            </div>
                         )}

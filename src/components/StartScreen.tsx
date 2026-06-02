@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, History, Eye, Globe, User, Check, X, Pencil, Crown, Medal, Award, Hexagon } from 'lucide-react';
 import { BestScoreData, HistoryEntry, CardData } from '../types';
+import { Filter } from 'bad-words';
 
 interface LeaderboardEntry {
   id: string;
@@ -43,6 +44,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
   const [tempName, setTempName] = useState(playerName);
   const [top3, setTop3] = useState<LeaderboardEntry[]>([]);
   const [isLoadingTop3, setIsLoadingTop3] = useState(false);
+
+  const wordFilter = useMemo(() => new Filter(), []);
 
   const fetchTop3 = React.useCallback(async () => {
     setIsLoadingTop3(true);
@@ -119,7 +122,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
       >
         <div className="flex items-center text-indigo-400 mb-2">
            <User className="w-4 h-4 mr-2" />
-           <span className="font-bold uppercase tracking-widest text-xs">Player Profile</span>
+           <span className="font-bold uppercase tracking-widest text-xs">Player Name</span>
         </div>
         {isEditingName ? (
           <div className="flex w-full max-w-xs items-center gap-2">
@@ -127,12 +130,13 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
               type="text" 
               value={tempName}
               onChange={(e) => setTempName(e.target.value)}
-              placeholder="Enter name for Ranking..."
+              placeholder="Enter name for global leaderboard..."
               maxLength={15}
               className="w-full bg-slate-900 border border-indigo-500/30 rounded-xl px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors shadow-inner"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && tempName.trim()) {
-                  const newName = tempName.trim();
+                  const rawName = tempName.trim();
+                  const newName = wordFilter.clean(rawName);
                   setPlayerName(newName);
                   setIsEditingName(false);
                   fetch('/api/leaderboard/name', {
@@ -147,7 +151,8 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
             <button 
               onClick={() => {
                 if (tempName.trim()) {
-                  const newName = tempName.trim();
+                  const rawName = tempName.trim();
+                  const newName = wordFilter.clean(rawName);
                   setPlayerName(newName);
                   setIsEditingName(false);
                   fetch('/api/leaderboard/name', {
@@ -215,9 +220,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                   </button>
                 )}
                 
-                <div className="flex items-center text-amber-500 mb-1">
-                   <Trophy className="w-5 h-5 mr-2" />
-                   <span className="font-bold uppercase tracking-widest text-sm">Best Score</span>
+                <div className="flex items-center mb-1">
+                   <motion.div
+                     animate={{ color: ['#f59e0b', '#fbbf24', '#fcd34d', '#f59e0b'] }}
+                     transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                   >
+                     <Trophy className="w-5 h-5 mr-2" />
+                   </motion.div>
+                   <motion.span 
+                     className="font-bold uppercase tracking-widest text-sm text-transparent bg-clip-text bg-[linear-gradient(90deg,#f59e0b,#fbbf24,#fcd34d,#f59e0b)] bg-[length:200%_auto]"
+                     animate={{ backgroundPosition: ['0% center', '200% center'] }}
+                     transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                   >
+                     Best Score
+                   </motion.span>
                 </div>
                 <span className="text-3xl font-black text-amber-400 drop-shadow-md mb-3">{bestScore.score.toLocaleString()}</span>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-sm text-[10px] sm:text-[13px]">
@@ -258,8 +274,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
       >
         <div className="bg-slate-800/40 border border-indigo-500/20 rounded-2xl p-4 flex flex-col w-full relative">
           <div className="flex items-center justify-center mb-3 border-b border-white/5 pb-2 relative">
-            <div className="flex items-center text-indigo-400 font-bold uppercase tracking-widest text-xs">
-              <Globe className="w-4 h-4 mr-2" /> Ranking Leaderboard
+            <div className="flex items-center font-bold uppercase tracking-widest text-xs">
+              <motion.div
+                 animate={{ color: ['#818cf8', '#c084fc', '#22d3ee', '#818cf8'] }}
+                 transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+              >
+                <Globe className="w-4 h-4 mr-2" />
+              </motion.div>
+              <motion.span 
+                 className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#818cf8,#c084fc,#22d3ee,#818cf8)] bg-[length:200%_auto]"
+                 animate={{ backgroundPosition: ['0% center', '200% center'] }}
+                 transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+              >
+                Global Leaderboard
+              </motion.span>
             </div>
             <button
                onClick={fetchTop3}
@@ -275,7 +303,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
             {isLoadingTop3 ? (
               <div className="flex items-center justify-center py-4 text-slate-400">
                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                <span className="text-sm">Loading Ranks...</span>
+                <span className="text-sm">Loading Top 3...</span>
               </div>
             ) : top3.length > 0 ? (
               top3.map((entry, index) => (
@@ -312,7 +340,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
               ))
             ) : (
               <div className="text-center py-4 text-sm text-slate-500">
-                No scores yet. Play to rank!
+                No scores yet. Play to enter the leaderboard!
               </div>
             )}
           </div>
@@ -321,7 +349,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
             onClick={onViewLeaderboard}
             className="w-full py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-400 font-bold text-xs flex items-center justify-center transition-colors"
           >
-            Expand Ranking
+            Expand Leaderboard
           </button>
         </div>
       </motion.div>
