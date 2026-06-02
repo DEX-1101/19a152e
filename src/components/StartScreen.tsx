@@ -281,13 +281,14 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
               top3.map((entry, index) => (
                 <div key={index} className="flex items-center justify-between bg-slate-900/40 rounded-xl p-2.5 border border-slate-700/50">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <div className="flex items-center justify-center w-7 h-7 rounded-full shrink-0 bg-slate-800 border border-slate-700/80">
-                      {index === 0 ? <Crown className="w-4 h-4 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" /> :
-                       index === 1 ? <Medal className="w-4 h-4 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)]" /> :
-                       <Award className="w-4 h-4 text-amber-700 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)]" />}
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 bg-slate-900 border border-slate-700/80 font-bold`}>
+                      <span className={`text-sm ${index === 0 ? 'text-amber-400' : index === 1 ? 'text-slate-300' : 'text-amber-600'}`}>{index + 1}</span>
                     </div>
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-1.5">
+                        {index === 0 ? <Crown className="w-4 h-4 text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.6)] shrink-0" /> :
+                         index === 1 ? <Medal className="w-4 h-4 text-slate-300 drop-shadow-[0_0_3px_rgba(203,213,225,0.6)] shrink-0" /> :
+                         index === 2 ? <Award className="w-4 h-4 text-amber-600 drop-shadow-[0_0_3px_rgba(180,83,9,0.5)] shrink-0" /> : null}
                         <span className={`text-sm font-bold truncate ${index === 0 ? 'text-white' : 'text-slate-300'}`}>{entry.name}</span>
                         {entry.id === playerId && <span className="px-1 py-0.5 rounded text-[8px] bg-indigo-500/20 text-indigo-300 uppercase font-black border border-indigo-500/30 shrink-0">You</span>}
                       </div>
