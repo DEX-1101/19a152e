@@ -73,6 +73,22 @@ export default function App() {
       const shuf = shuffleArray(cards);
       setUpcomingDeck(shuf);
       
+      const alreadyPreloaded = localStorage.getItem('czn_images_cached') === 'true';
+      
+      if (alreadyPreloaded) {
+        setIsPreloadingImages(false);
+        // Preload implicitly in background
+        cards.forEach(c => {
+          if (!preloadedUrls.current.has(c.imageUrl)) {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = c.imageUrl;
+            preloadedUrls.current.add(c.imageUrl);
+          }
+        });
+        return;
+      }
+
       const urlsToLoad = cards.map(c => c.imageUrl).filter(url => !preloadedUrls.current.has(url));
       
       if (urlsToLoad.length === 0) {
@@ -90,6 +106,7 @@ export default function App() {
         loaded++;
         setPreloadProgress(Math.floor((loaded / totalToLoad) * 100));
         if (loaded >= totalToLoad) {
+           localStorage.setItem('czn_images_cached', 'true');
            setIsPreloadingImages(false);
         }
       };
