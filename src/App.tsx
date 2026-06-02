@@ -77,15 +77,6 @@ export default function App() {
       
       if (alreadyPreloaded) {
         setIsPreloadingImages(false);
-        // Preload implicitly in background
-        cards.forEach(c => {
-          if (!preloadedUrls.current.has(c.imageUrl)) {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = c.imageUrl;
-            preloadedUrls.current.add(c.imageUrl);
-          }
-        });
         return;
       }
 
