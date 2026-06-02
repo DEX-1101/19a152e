@@ -23,3 +23,7 @@ export interface BestScoreData {
   totalGuesses: number;
   timeTaken: number;
 }
+
+export interface HistoryEntry extends BestScoreData {
+  timestamp: number;
+}

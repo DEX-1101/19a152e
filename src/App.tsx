@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Analytics } from '@vercel/analytics/react';
-import { CardData, GameStats, BestScoreData } from './types';
+import { CardData, GameStats, BestScoreData, HistoryEntry } from './types';
 import { fetchCards } from './lib/api';
 import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from './lib/audio';
 import { shuffleArray } from './lib/utils';
@@ -55,7 +54,9 @@ export default function App() {
   
   const deleteBestScore = useCallback(() => {
     localStorage.removeItem('czn_best_score');
+    localStorage.removeItem('czn_history');
     setBestScore(null);
+    setHistory([]);
   }, []);
 
   // Non-repeating deck state
@@ -68,9 +69,9 @@ export default function App() {
       const shuf = shuffleArray(cards);
       setUpcomingDeck(shuf);
       
-      // Preload first 5 images of the upcoming deck to ensure the first cards are instant
+      // Preload ALL images to cache them
       requestAnimationFrame(() => {
-        shuf.slice(0, 5).forEach(c => {
+        cards.forEach(c => {
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.src = c.imageUrl;
@@ -82,6 +83,8 @@ export default function App() {
   // Feedback state
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [timeAddedAnim, setTimeAddedAnim] = useState<number>(0);
+
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const loadCards = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
@@ -123,6 +126,12 @@ export default function App() {
         });
       }
     }
+    const savedHistory = localStorage.getItem('czn_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {}
+    }
   }, [loadCards]);
 
   const togglePool = (pool: 'character' | 'neutral' | 'monster' | 'other') => {
@@ -152,11 +161,13 @@ export default function App() {
   };
 
   const endGame = useCallback(() => {
-    setStatus('end');
-    setStats(currentStats => {
-      const currentHighest = bestScore?.score || 0;
-      if (currentStats.score > currentHighest) {
-        const newBest: BestScoreData = {
+    setStatus(prevStatus => {
+      if (prevStatus === 'end') return prevStatus;
+      
+      setStats(currentStats => {
+        const currentHighest = bestScore?.score || 0;
+        
+        const newHistoryEntry: HistoryEntry = {
           score: currentStats.score,
           numOptions,
           customTime,
@@ -164,15 +175,36 @@ export default function App() {
           maxStreak: currentStats.maxStreak,
           correctGuesses: currentStats.correctGuesses,
           totalGuesses: currentStats.totalGuesses,
-          timeTaken: currentStats.timeTaken
+          timeTaken: currentStats.timeTaken,
+          timestamp: Date.now()
         };
-        setBestScore(newBest);
-        setIsNewHighScore(true);
-        localStorage.setItem('czn_best_score', JSON.stringify(newBest));
-      } else {
-        setIsNewHighScore(false);
-      }
-      return currentStats;
+        
+        setHistory(prevHistory => {
+          const newHistory = [newHistoryEntry, ...prevHistory].slice(0, 5);
+          localStorage.setItem('czn_history', JSON.stringify(newHistory));
+          return newHistory;
+        });
+
+        if (currentStats.score > currentHighest) {
+          const newBest: BestScoreData = {
+            score: currentStats.score,
+            numOptions,
+            customTime,
+            pools,
+            maxStreak: currentStats.maxStreak,
+            correctGuesses: currentStats.correctGuesses,
+            totalGuesses: currentStats.totalGuesses,
+            timeTaken: currentStats.timeTaken
+          };
+          setBestScore(newBest);
+          setIsNewHighScore(true);
+          localStorage.setItem('czn_best_score', JSON.stringify(newBest));
+        } else {
+          setIsNewHighScore(false);
+        }
+        return currentStats;
+      });
+      return 'end';
     });
   }, [bestScore, numOptions, customTime, pools]);
 
@@ -388,6 +420,8 @@ export default function App() {
               setCustomTime={setCustomTime}
               bestScore={bestScore}
               onDeleteBestScore={deleteBestScore}
+              history={history}
+              cards={cards}
             />
           )}
 
@@ -401,30 +435,40 @@ export default function App() {
               className="w-full max-w-2xl h-[calc(100dvh-3rem)] sm:h-[calc(100dvh-5rem)] flex flex-col items-center justify-between"
             >
               {/* HUD */}
-              <div className="w-full shrink-0 flex justify-between items-center bg-slate-900/60 backdrop-blur-xl p-2 sm:p-5 rounded-2xl sm:rounded-[2rem] shadow-2xl border border-white/5 max-w-xl gap-2 sm:gap-4">
-                <div className="flex shrink-0">
-                  <div className={`relative flex items-center justify-center font-bold px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= 10 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
+              <div className="w-full shrink-0 relative bg-slate-900/60 backdrop-blur-xl rounded-2xl sm:rounded-[2rem] shadow-2xl border border-white/5 max-w-xl">
+                <div className="absolute inset-0 overflow-hidden rounded-2xl sm:rounded-[2rem]">
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 z-0 transition-all duration-1000 ease-linear opacity-20"
+                    style={{ 
+                      width: `${Math.max(0, (gameTimeLeft / customTime) * 100)}%`,
+                      backgroundColor: gameTimeLeft <= customTime * 0.2 ? '#ef4444' : '#6366f1'
+                    }}
+                  />
+                </div>
+                <div className="relative z-10 flex justify-between items-center w-full p-2 sm:p-5 gap-2 sm:gap-4">
+                  <div className="flex shrink-0">
+                  <div className={`relative flex items-center justify-center font-bold px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border min-w-[70px] sm:min-w-[90px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-colors ${gameTimeLeft <= customTime * 0.2 ? 'text-rose-400 bg-rose-500/20 border-rose-500/40 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.3)]' : 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20'}`}>
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                     <motion.span 
-                      key={gameTimeLeft}
-                      initial={{ scale: 1.25 }}
+                      key={gameTimeLeft <= customTime * 0.2 ? gameTimeLeft : 'timer'}
+                      initial={{ scale: gameTimeLeft <= customTime * 0.2 ? 1.25 : 1 }}
                       animate={{ scale: 1 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 15 }}
                       className="text-xl sm:text-2xl min-w-[1.5rem] sm:min-w-[2rem] text-right leading-none inline-block origin-right"
                     >
                       {gameTimeLeft}
                     </motion.span>
-                    <span className={`text-xs ml-0.5 ${gameTimeLeft <= 10 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
+                    <span className={`text-xs ml-0.5 ${gameTimeLeft <= customTime * 0.2 ? 'text-rose-500' : 'text-indigo-400'}`}>s</span>
                     <AnimatePresence>
                       {timeAddedAnim > 0 && (
                         <motion.div
                           key={timeAddedAnim}
-                          initial={{ opacity: 0, y: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, y: -30, scale: 1.2 }}
-                          exit={{ opacity: 0, y: -40 }}
-                          transition={{ duration: 1 }}
+                          initial={{ opacity: 0, y: 10, scale: 0.5 }}
+                          animate={{ opacity: 1, y: -35, scale: 1.2 }}
+                          exit={{ opacity: 0, y: -45, scale: 1 }}
+                          transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
                           onAnimationComplete={() => setTimeAddedAnim(0)}
-                          className="absolute -top-6 left-1/2 -translate-x-1/2 text-emerald-400 font-black text-xl whitespace-nowrap drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] z-50 pointer-events-none"
+                          className="absolute -top-4 left-1/2 -translate-x-1/2 text-emerald-400 font-black text-lg sm:text-xl whitespace-nowrap drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] z-50 pointer-events-none"
                         >
                           +10s!
                         </motion.div>
@@ -439,9 +483,9 @@ export default function App() {
                   <div className="flex flex-col items-center justify-center min-h-[36px] sm:min-h-[44px]">
                     <motion.div
                       key={stats.score}
-                      initial={{ scale: 1.3, filter: 'brightness(1.5)' }}
-                      animate={{ scale: 1, filter: 'brightness(1)' }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
                     >
                       <span className="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-b from-amber-300 to-amber-500 leading-none drop-shadow-sm inline-block">
                         {stats.score.toLocaleString()}
@@ -449,17 +493,26 @@ export default function App() {
                     </motion.div>
                     <AnimatePresence mode="popLayout">
                       {stats.currentStreak > 1 && (
-                        <motion.span 
-                          key={stats.currentStreak}
-                          initial={{ opacity: 0, y: 10, scale: 0.5 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.5, filter: 'blur(5px)' }}
-                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                          className="text-[10px] sm:text-xs font-bold text-amber-400 mt-1 flex items-center tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 whitespace-nowrap"
+                        <span 
+                          className="inline-flex text-[10px] sm:text-xs font-bold text-amber-400 mt-1 items-center tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 whitespace-nowrap overflow-hidden"
                         >
                           <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1 animate-pulse" />
-                          {stats.currentStreak}x <span className="hidden sm:inline ml-1">STREAK</span>
-                        </motion.span>
+                          <div className="relative inline-flex items-center justify-center">
+                            <AnimatePresence mode="popLayout" initial={false}>
+                              <motion.span
+                                key={stats.currentStreak}
+                                initial={{ y: 15, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -15, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="inline-block"
+                              >
+                                {stats.currentStreak}
+                              </motion.span>
+                            </AnimatePresence>
+                          </div>
+                          x <span className="hidden sm:inline ml-1">STREAK</span>
+                        </span>
                       )}
                     </AnimatePresence>
                   </div>
@@ -469,6 +522,7 @@ export default function App() {
                   <span className="text-xl sm:text-2xl leading-none inline-block">
                     {stats.correctGuesses}
                   </span>
+                </div>
                 </div>
               </div>
 
@@ -677,9 +731,11 @@ export default function App() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl flex flex-col items-center max-h-[90vh] overflow-y-auto"
+              className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
             >
-              <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4 shrink-0">
+              <div className="flex flex-col items-center w-full overflow-y-auto custom-scrollbar">
+                <div className="flex flex-col items-center w-full p-6">
+                  <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-4 shrink-0">
                 <Lightbulb className="w-8 h-8 text-amber-500" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2 text-center">How to Play</h3>
@@ -743,6 +799,8 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -761,7 +819,7 @@ export default function App() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 w-full max-w-sm shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col items-center max-h-[90vh] overflow-y-auto relative overflow-hidden"
+              className="bg-slate-900 border border-amber-500/30 rounded-3xl p-6 w-full max-w-sm shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col items-center max-h-[90vh] overflow-y-auto relative overflow-hidden custom-scrollbar"
             >
               <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-slate-900/0 to-slate-900/0"></div>
               
@@ -805,7 +863,9 @@ export default function App() {
 
       {(status === 'start' || status === 'end') && (
         <footer className="relative z-10 w-full text-center py-4 text-slate-500 text-sm">
-          Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">Someone who refuses to read the card, then makes a Reddit post: 'wHy gAmE bUg?'</a>
+          Made by <a href="https://github.com/DEX-1101" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors font-medium">
+            {history.length > 0 ? "x1101" : "Someone who refuses to read the card, then makes a Reddit post: 'wHy gAmE bUg?'"}
+          </a>
         </footer>
       )}
 
@@ -814,7 +874,6 @@ export default function App() {
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
       </div>
-      <Analytics />
     </div>
   );
 }

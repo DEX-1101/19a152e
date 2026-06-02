@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, Trash2 } from 'lucide-react';
-import { BestScoreData } from '../types';
+import { Play, Loader2, RefreshCw, Sparkles, CheckSquare, Square, Trophy, Clock, Target, Flame, Trash2, History, Eye } from 'lucide-react';
+import { BestScoreData, HistoryEntry, CardData } from '../types';
 
 interface StartScreenProps {
   onStart: () => void;
@@ -16,10 +16,15 @@ interface StartScreenProps {
   setCustomTime: (v: number) => void;
   bestScore: BestScoreData | null;
   onDeleteBestScore: () => void;
+  history: HistoryEntry[];
+  cards: CardData[];
 }
 
-export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore, onDeleteBestScore }) => {
+export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, isLoading, totalCards, pools, onTogglePool, numOptions, setNumOptions, customTime, setCustomTime, bestScore, onDeleteBestScore, history, cards }) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [zoomedCard, setZoomedCard] = useState<CardData | null>(null);
 
   return (
     <motion.div 
@@ -84,7 +89,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="flex flex-col items-center justify-center w-full h-full py-2"
               >
-                <div className="text-amber-500 font-bold mb-4 text-lg">Delete Best Score?</div>
+                <div className="text-amber-500 font-bold mb-4 text-lg">Delete Best Score & History?</div>
                 <div className="flex gap-4">
                   <button
                     onClick={() => setShowConfirmDelete(false)}
@@ -114,10 +119,20 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
                 <button
                   onClick={() => setShowConfirmDelete(true)}
                   className="absolute top-3 right-3 text-amber-500/50 hover:text-rose-400 bg-amber-500/10 hover:bg-rose-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-rose-500/30 focus:opacity-100 outline-none"
-                  title="Delete Best Score"
+                  title="Delete Best Score & History"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
+                
+                {history.length > 0 && (
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="absolute top-3 left-3 text-indigo-400/70 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 p-2 rounded-xl transition-all border border-transparent hover:border-indigo-500/30 focus:opacity-100 outline-none"
+                    title="View History"
+                  >
+                    <History className="w-4 h-4" />
+                  </button>
+                )}
                 
                 <div className="flex items-center text-amber-500 mb-1">
                    <Trophy className="w-5 h-5 mr-2" />
@@ -262,14 +277,25 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           )}
         </button>
 
-        <button
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
-          Update Card Pool
-        </button>
+        <div className="w-full flex gap-3">
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="flex-[2] flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+            Update Card Pool
+          </button>
+          
+          <button
+            onClick={() => setShowGallery(true)}
+            disabled={isLoading || totalCards === 0}
+            className="flex-1 flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
+          >
+            <Eye className="w-4 h-4 mr-2 text-indigo-400" />
+            View Cards
+          </button>
+        </div>
       </motion.div>
 
       {!isLoading && totalCards < 2 && (
@@ -281,6 +307,151 @@ export const StartScreen: React.FC<StartScreenProps> = ({ onStart, onRefresh, is
           Not enough cards to play. Need at least one card pool.
         </motion.p>
       )}
+
+      {/* History Modal */}
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-indigo-500/30 rounded-3xl p-6 w-full max-w-sm sm:max-w-md shadow-[0_0_40px_rgba(99,102,241,0.2)] flex flex-col max-h-[85vh] overflow-hidden relative"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center text-indigo-400 text-xl font-bold">
+                  <History className="w-6 h-6 mr-2" /> Recent History
+                </div>
+                <button 
+                  onClick={() => setShowHistory(false)}
+                  className="text-slate-400 hover:text-white transition-colors p-2"
+                >
+                  Close
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                {history.map((entry, index) => (
+                  <div key={index} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700/50 relative z-10">
+                      <span className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider">{new Date(entry.timestamp).toLocaleString()}</span>
+                      <span className="text-amber-400 text-lg font-black drop-shadow-sm">{entry.score.toLocaleString()}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] relative z-10 w-full">
+                      <div className="text-slate-400 flex justify-between bg-slate-950/40 p-1.5 rounded-lg border border-white/5"><span>Timer:</span> <span className="text-slate-200 font-bold">{entry.customTime}s</span></div>
+                      <div className="text-slate-400 flex justify-between bg-slate-950/40 p-1.5 rounded-lg border border-white/5"><span>Streak:</span> <span className="text-slate-200 font-bold">{entry.maxStreak}</span></div>
+                      <div className="text-slate-400 flex justify-between bg-slate-950/40 p-1.5 rounded-lg border border-white/5"><span>Options:</span> <span className="text-slate-200 font-bold">{entry.numOptions}</span></div>
+                      <div className="text-slate-400 flex justify-between bg-slate-950/40 p-1.5 rounded-lg border border-white/5"><span>Acc:</span> <span className="text-slate-200 font-bold">{(entry.correctGuesses / Math.max(entry.totalGuesses, 1) * 100).toFixed(0)}%</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Gallery Modal */}
+      <AnimatePresence>
+        {showGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-indigo-500/30 rounded-3xl p-6 w-full max-w-4xl shadow-[0_0_40px_rgba(99,102,241,0.2)] flex flex-col max-h-[85vh] overflow-hidden relative"
+            >
+              <div className="flex items-center justify-between mb-4 shrink-0">
+                <div className="flex items-center text-indigo-400 text-lg sm:text-xl font-bold">
+                  <Eye className="w-5 h-5 sm:w-6 sm:h-6 mr-2" /> Selected Card Pool <span className="opacity-70 ml-2 text-sm sm:text-base">({cards.length} Cards)</span>
+                </div>
+                <button 
+                  onClick={() => setShowGallery(false)}
+                  className="text-slate-400 hover:text-white transition-colors p-2"
+                >
+                  Close
+                </button>
+              </div>
+              
+              <div className="overflow-y-auto custom-scrollbar flex-grow pr-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {cards.map((c, i) => (
+                    <div key={`${c.name}-${i}`} className="flex justify-center">
+                      <div 
+                        onClick={() => setZoomedCard(c)}
+                        className="relative w-full max-w-[200px] aspect-[353/523] bg-slate-900 rounded-[1.5rem] sm:rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden border-2 border-white/10 shrink-0 group cursor-pointer"
+                      >
+                        <img 
+                          src={c.imageUrl} 
+                          alt={c.name} 
+                          className="w-full h-full object-fill select-none pointer-events-none transition-transform duration-700 ease-out group-hover:scale-110 scale-[1.05]"
+                          loading="lazy"
+                        />
+                        <img
+                          src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                          alt=""
+                          className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 flex items-end justify-center pb-4">
+                          <Eye className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-2 group-hover:translate-y-0 w-6 h-6 drop-shadow-md" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {zoomedCard && (
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-xl"
+             onClick={() => setZoomedCard(null)}
+           >
+             <motion.div
+               initial={{ scale: 0.9, opacity: 0, y: 20 }}
+               animate={{ scale: 1, opacity: 1, y: 0 }}
+               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               className="relative h-[80vh] sm:h-[85vh] aspect-[353/523] rounded-[2rem] sm:rounded-3xl shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden border-2 border-white/10 shrink-0"
+               onClick={(e) => e.stopPropagation()}
+             >
+               <img 
+                 src={zoomedCard.imageUrl} 
+                 alt={zoomedCard.name} 
+                 className="w-full h-full object-fill select-none pointer-events-none scale-[1.05]"
+               />
+               <img
+                 src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                 alt=""
+                 className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
+               />
+               <div className="absolute top-4 right-4 z-20">
+                 <button onClick={() => setZoomedCard(null)} className="p-2 bg-black/50 hover:bg-black/80 rounded-full text-white/70 hover:text-white transition-colors backdrop-blur-md">
+                   <Eye className="w-5 h-5 hidden" /> {/* Hidden icon just for alignment if needed, or close button */}
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                 </button>
+               </div>
+             </motion.div>
+           </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
