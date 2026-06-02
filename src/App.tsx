@@ -39,6 +39,9 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState<GameStatus>('start');
+  const [isPreloadingImages, setIsPreloadingImages] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+  const preloadedUrls = React.useRef<Set<string>>(new Set());
   
   // Game State
   const [stats, setStats] = useState<GameStats>({ score: 0, correctGuesses: 0, totalGuesses: 0, timeTaken: 0, currentStreak: 0, maxStreak: 0 });
@@ -70,14 +73,42 @@ export default function App() {
       const shuf = shuffleArray(cards);
       setUpcomingDeck(shuf);
       
-      // Preload ALL images to cache them
-      requestAnimationFrame(() => {
-        cards.forEach(c => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = c.imageUrl;
-        });
+      const urlsToLoad = cards.map(c => c.imageUrl).filter(url => !preloadedUrls.current.has(url));
+      
+      if (urlsToLoad.length === 0) {
+        setIsPreloadingImages(false);
+        return;
+      }
+      
+      setIsPreloadingImages(true);
+      setPreloadProgress(0);
+      
+      let loaded = 0;
+      const totalToLoad = urlsToLoad.length;
+      
+      const updateProgress = () => {
+        loaded++;
+        setPreloadProgress(Math.floor((loaded / totalToLoad) * 100));
+        if (loaded >= totalToLoad) {
+           setIsPreloadingImages(false);
+        }
+      };
+
+      urlsToLoad.forEach(url => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          preloadedUrls.current.add(url);
+          updateProgress();
+        };
+        img.onerror = () => {
+          preloadedUrls.current.add(url);
+          updateProgress();
+        };
+        img.src = url;
       });
+    } else {
+      setIsPreloadingImages(false);
     }
   }, [cards, status]);
 
@@ -406,7 +437,49 @@ export default function App() {
       {/* Main Content */}
       <main className="relative z-10 w-full flex-grow flex flex-col items-center justify-center p-2 sm:p-4 min-h-0">
         <AnimatePresence mode="wait">
-          {status === 'start' && (
+          {isPreloadingImages && (
+            <motion.div
+              key="preload"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center p-8 text-center max-w-xl mx-auto h-full min-h-[60vh] py-12"
+            >
+              <div className="relative mb-12 w-32 h-32 flex flex-col items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-4 border-slate-800/80 animate-pulse"></div>
+                <svg className="w-full h-full text-indigo-500 absolute inset-0 animate-spin" style={{ animationDuration: '2s' }} viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeDasharray="80 200" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <motion.div 
+                    className="w-16 h-16 bg-[length:200%_auto] drop-shadow-[0_0_15px_rgba(167,139,250,0.6)] bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)]"
+                    animate={{ backgroundPosition: ['0% center', '200% center'] }}
+                    transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                    style={{
+                      maskImage: 'url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)',
+                      maskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskImage: 'url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)',
+                      WebkitMaskSize: 'contain',
+                      WebkitMaskRepeat: 'no-repeat',
+                      WebkitMaskPosition: 'center'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <h2 className="text-lg sm:text-xl font-bold text-slate-200 mb-4 tracking-wide font-sans">Loading card image. Please wait...</h2>
+              <div className="w-full max-w-xs bg-slate-800/50 p-1 rounded-full border border-slate-700/50 mb-3 shadow-inner">
+                <div className="h-1.5 rounded-full overflow-hidden w-full bg-slate-800">
+                   <div className="h-full bg-[linear-gradient(90deg,#22d3ee,#818cf8)] transition-all duration-300 ease-out" style={{ width: `${preloadProgress}%` }}></div>
+                </div>
+              </div>
+              <span className="text-indigo-400 font-bold text-sm tracking-widest">{preloadProgress}%</span>
+            </motion.div>
+          )}
+
+          {status === 'start' && !isPreloadingImages && (
             <StartScreen 
               key="start" 
               onStart={startGame} 
