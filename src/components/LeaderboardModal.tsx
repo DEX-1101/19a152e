@@ -238,28 +238,28 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                         {/* Add options metadata */}
                         {(entry.maxStreak !== undefined ||
                           entry.customTime !== undefined) && (
-                          <div className="flex flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-1.5 text-[8px] sm:text-[10px] font-medium text-slate-400">
+                          <div className="flex bg-slate-900/50 p-1 sm:p-1.5 rounded w-max mt-1 gap-1.5 sm:gap-2 items-center flex-wrap text-[8px] sm:text-[9px] text-slate-500 font-medium">
                             {entry.customTime !== undefined && (
-                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                                <Clock className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                              <span className="flex items-center">
+                                <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5" />
                                 {entry.customTime}s
-                              </div>
+                              </span>
                             )}
                             {entry.numOptions !== undefined && (
-                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                                <CheckSquare className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
-                                {entry.numOptions} opts
-                              </div>
+                              <span className="flex items-center">
+                                <CheckSquare className="w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5" />
+                                {entry.numOptions}opt
+                              </span>
                             )}
                             {entry.maxStreak !== undefined && (
-                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                                <Flame className="w-2 h-2 sm:w-3 sm:h-3 text-rose-500" />{" "}
-                                {entry.maxStreak} streak
-                              </div>
+                              <span className="flex items-center">
+                                <Flame className="w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5 text-rose-500/70" />
+                                {entry.maxStreak}
+                              </span>
                             )}
                             {entry.pools !== undefined && (
-                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                                <Hexagon className="w-2 h-2 sm:w-3 sm:h-3 text-indigo-400" />
+                              <span className="flex items-center">
+                                <Hexagon className="w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5 text-indigo-400" />
                                 {entry.pools.character &&
                                 entry.pools.neutral &&
                                 entry.pools.monster &&
@@ -273,13 +273,13 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                                     ]
                                       .filter(Boolean)
                                       .join(",")}
-                              </div>
+                              </span>
                             )}
                           </div>
                         )}
                       </div>
                       <div
-                        className={`font-black text-right shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-xl sm:text-3xl" : index < 3 ? "text-white text-lg sm:text-2xl" : "text-slate-400 text-base sm:text-xl"} ${entry.id === playerId ? "bg-orange-500/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border-2 border-orange-500 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.4)]" : ""}`}
+                        className={`font-black text-right shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-xl sm:text-3xl" : index < 3 ? "text-white text-lg sm:text-2xl" : "text-slate-400 text-base sm:text-xl"}`}
                       >
                         {entry.score.toLocaleString()}
                       </div>

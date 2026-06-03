@@ -492,7 +492,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     </div>
                   </div>
                   <div
-                    className={`font-black tracking-tight shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-lg" : "text-white text-base"} ${entry.id === playerId ? "bg-orange-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border-2 border-orange-500 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.4)]" : "pl-2"}`}
+                    className={`font-black tracking-tight shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-lg" : "text-white text-base"} pl-2`}
                   >
                     {entry.score.toLocaleString()}
                   </div>
