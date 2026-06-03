@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const leaderboard = await client.zrange("global_leaderboard", 0, 49, { rev: true, withScores: true });
       if (leaderboard.length === 0) {
-        return res.status(200).json({ isConfigured: true, leaderboard: [] });
+        return res.status(200).json({ isConfigured: true, leaderboard: [], totalPlayers: 0 });
       }
 
       const formatted = [];
@@ -55,7 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           pools: meta.pools,
         });
       }
-      return res.status(200).json({ isConfigured: true, leaderboard: formatted });
+      const totalPlayers = await client.zcard("global_leaderboard");
+      return res.status(200).json({ isConfigured: true, leaderboard: formatted, totalPlayers });
     } catch (e) {
       return res.status(500).json({ error: "Failed to fetch leaderboard" });
     }
