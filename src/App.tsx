@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Analytics } from '@vercel/analytics/react';
 import { CardData, GameStats, BestScoreData, HistoryEntry } from './types';
 import { fetchCards } from './lib/api';
 import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from './lib/audio';
@@ -444,7 +443,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col selection:bg-indigo-900/50 selection:text-indigo-200">
+    <div className="min-h-screen relative bg-slate-950 font-sans text-slate-100 flex flex-col selection:bg-indigo-900/50 selection:text-indigo-200 overflow-x-hidden">
       
       {/* Background decoration for Dark Mode */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -985,7 +984,6 @@ export default function App() {
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
       </div>
-      <Analytics />
     </div>
   );
 }

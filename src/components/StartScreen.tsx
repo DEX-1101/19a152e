@@ -128,7 +128,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -10 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col items-center justify-center p-8 text-center max-w-xl mx-auto h-full min-h-[80vh] py-12 relative"
+      className="flex flex-col items-center justify-center p-4 sm:p-8 text-center w-full max-w-xl mx-auto h-full min-h-[80vh] py-8 sm:py-12 relative"
     >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -154,7 +154,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           }}
         />
         <motion.h1
-          className="text-4xl md:text-5xl font-black text-center sm:text-left text-transparent bg-clip-text bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)] bg-[length:200%_auto] tracking-tighter drop-shadow-md"
+          className="text-3xl sm:text-4xl md:text-5xl font-black text-center sm:text-left text-transparent bg-clip-text bg-[linear-gradient(90deg,#22d3ee,#818cf8,#c084fc,#22d3ee)] bg-[length:200%_auto] tracking-tighter drop-shadow-md"
           animate={{ backgroundPosition: ["0% center", "200% center"] }}
           transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
         >
@@ -389,7 +389,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 >
                   Global Leaderboard
                 </motion.span>
-                {totalPlayersTop3 > 0 && (
+                {totalPlayersTop3 >= 0 && (
                   <span className="text-[9px] sm:text-[10px] text-teal-300 bg-teal-500/10 px-1.5 py-0.5 rounded-md border border-teal-500/20 lowercase tracking-normal font-bold">
                     {totalPlayersTop3}{" "}
                     {totalPlayersTop3 === 1 ? "Player" : "Players"}

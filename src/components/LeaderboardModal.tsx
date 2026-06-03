@@ -122,7 +122,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                     Global Leaderboard
                   </motion.span>
                 </div>
-                {totalPlayers > 0 && (
+                {totalPlayers >= 0 && (
                   <span className="text-[10px] sm:text-xs text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded-md border border-teal-500/20 lowercase tracking-normal font-bold">
                     {totalPlayers} {totalPlayers === 1 ? "Player" : "Players"}
                   </span>

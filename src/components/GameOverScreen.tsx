@@ -72,7 +72,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({ stats, onRestart
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: -20 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col items-center justify-center p-8 bg-slate-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-700/50 max-w-lg mx-auto w-full"
+      className="flex flex-col items-center justify-center p-4 sm:p-8 bg-slate-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-700/50 max-w-lg mx-auto w-full"
     >
       <motion.div 
         initial={{ scale: 0 }}
