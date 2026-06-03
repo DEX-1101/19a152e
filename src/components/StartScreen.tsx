@@ -441,7 +441,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                           <Award className="w-4 h-4 text-amber-600 drop-shadow-[0_0_3px_rgba(180,83,9,0.5)] shrink-0" />
                         ) : null}
                         <span
-                          className={`text-sm font-bold truncate ${index === 0 ? "text-white" : "text-slate-300"}`}
+                          className={`text-sm font-bold truncate max-w-[120px] sm:max-w-[180px] ${index === 0 ? "text-white" : "text-slate-300"}`}
                         >
                           {entry.name}
                         </span>
@@ -492,7 +492,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     </div>
                   </div>
                   <div
-                    className={`font-black tracking-tight shrink-0 pl-2 ${index === 0 ? "text-amber-400 text-lg" : "text-white text-base"}`}
+                    className={`font-black tracking-tight shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-lg" : "text-white text-base"} ${entry.id === playerId ? "bg-orange-500/20 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border-2 border-orange-500 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.4)]" : "pl-2"}`}
                   >
                     {entry.score.toLocaleString()}
                   </div>

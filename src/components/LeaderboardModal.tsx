@@ -225,7 +225,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                             <Award className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" />
                           ) : null}
                           <div
-                            className={`font-bold truncate max-w-[100px] sm:max-w-none ${index < 3 ? "text-white text-sm sm:text-lg" : "text-slate-300 text-xs sm:text-base"}`}
+                            className={`font-bold truncate max-w-[120px] sm:max-w-[200px] ${index < 3 ? "text-white text-sm sm:text-lg" : "text-slate-300 text-xs sm:text-base"}`}
                           >
                             {entry.name}
                           </div>
@@ -235,55 +235,55 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
                             </span>
                           )}
                         </div>
+                        {/* Add options metadata */}
+                        {(entry.maxStreak !== undefined ||
+                          entry.customTime !== undefined) && (
+                          <div className="flex flex-wrap gap-1 sm:gap-2 mt-1 sm:mt-1.5 text-[8px] sm:text-[10px] font-medium text-slate-400">
+                            {entry.customTime !== undefined && (
+                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                                <Clock className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                                {entry.customTime}s
+                              </div>
+                            )}
+                            {entry.numOptions !== undefined && (
+                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                                <CheckSquare className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
+                                {entry.numOptions} opts
+                              </div>
+                            )}
+                            {entry.maxStreak !== undefined && (
+                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                                <Flame className="w-2 h-2 sm:w-3 sm:h-3 text-rose-500" />{" "}
+                                {entry.maxStreak} streak
+                              </div>
+                            )}
+                            {entry.pools !== undefined && (
+                              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                                <Hexagon className="w-2 h-2 sm:w-3 sm:h-3 text-indigo-400" />
+                                {entry.pools.character &&
+                                entry.pools.neutral &&
+                                entry.pools.monster &&
+                                entry.pools.other
+                                  ? "ALL"
+                                  : [
+                                      entry.pools.character && "CH",
+                                      entry.pools.neutral && "NE",
+                                      entry.pools.monster && "MO",
+                                      entry.pools.other && "OT",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(",")}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div
-                        className={`font-black text-right shrink-0 ${index === 0 ? "text-amber-400 text-xl sm:text-3xl" : index < 3 ? "text-white text-lg sm:text-2xl" : "text-slate-400 text-base sm:text-xl"}`}
+                        className={`font-black text-right shrink-0 flex items-center justify-center ${index === 0 ? "text-amber-400 text-xl sm:text-3xl" : index < 3 ? "text-white text-lg sm:text-2xl" : "text-slate-400 text-base sm:text-xl"} ${entry.id === playerId ? "bg-orange-500/20 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border-2 border-orange-500 text-orange-300 shadow-[0_0_15px_rgba(249,115,22,0.4)]" : ""}`}
                       >
                         {entry.score.toLocaleString()}
                       </div>
                     </div>
-                    {/* Add options metadata */}
-                    {(entry.maxStreak !== undefined ||
-                      entry.customTime !== undefined) && (
-                      <div className="flex flex-wrap gap-1 sm:gap-2 mt-0.5 sm:ml-[56px] text-[8px] sm:text-[10px] font-medium text-slate-400">
-                        {entry.customTime !== undefined && (
-                          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                            <Clock className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
-                            {entry.customTime}s
-                          </div>
-                        )}
-                        {entry.numOptions !== undefined && (
-                          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                            <CheckSquare className="w-2 h-2 sm:w-3 sm:h-3" />{" "}
-                            {entry.numOptions} opts
-                          </div>
-                        )}
-                        {entry.maxStreak !== undefined && (
-                          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                            <Flame className="w-2 h-2 sm:w-3 sm:h-3 text-rose-500" />{" "}
-                            {entry.maxStreak} streak
-                          </div>
-                        )}
-                        {entry.pools !== undefined && (
-                          <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900/50 px-1 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                            <Hexagon className="w-2 h-2 sm:w-3 sm:h-3 text-indigo-400" />
-                            {entry.pools.character &&
-                            entry.pools.neutral &&
-                            entry.pools.monster &&
-                            entry.pools.other
-                              ? "ALL"
-                              : [
-                                  entry.pools.character && "CH",
-                                  entry.pools.neutral && "NE",
-                                  entry.pools.monster && "MO",
-                                  entry.pools.other && "OT",
-                                ]
-                                  .filter(Boolean)
-                                  .join(",")}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 ))
               )}
