@@ -1,6 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Globe, Loader2, Trophy, Target, Clock, CheckSquare, Flame, Hexagon, Crown, Medal, Award, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Globe,
+  Loader2,
+  Trophy,
+  Target,
+  Clock,
+  CheckSquare,
+  Flame,
+  Hexagon,
+  Crown,
+  Medal,
+  Award,
+  RefreshCw,
+} from "lucide-react";
 
 interface LeaderboardEntry {
   id: string;
@@ -9,7 +22,12 @@ interface LeaderboardEntry {
   maxStreak?: number;
   customTime?: number;
   numOptions?: number;
-  pools?: { character?: boolean; neutral?: boolean; monster?: boolean; other?: boolean };
+  pools?: {
+    character?: boolean;
+    neutral?: boolean;
+    monster?: boolean;
+    other?: boolean;
+  };
 }
 
 interface LeaderboardModalProps {
@@ -18,21 +36,31 @@ interface LeaderboardModalProps {
   playerId: string;
 }
 
-export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onClose, playerId }) => {
+export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
+  isOpen,
+  onClose,
+  playerId,
+}) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardConfigured, setLeaderboardConfigured] = useState<boolean | null>(null);
+  const [leaderboardConfigured, setLeaderboardConfigured] = useState<
+    boolean | null
+  >(null);
+  const [totalPlayers, setTotalPlayers] = useState<number>(0);
 
   const fetchLeaderboard = React.useCallback(async () => {
     setLeaderboardLoading(true);
     try {
-      const res = await fetch('/api/leaderboard');
+      const res = await fetch("/api/leaderboard");
       const data = await res.json();
       if (data.isConfigured !== undefined) {
         setLeaderboardConfigured(data.isConfigured);
       }
       if (data.leaderboard) {
         setLeaderboard(data.leaderboard);
+      }
+      if (typeof data.totalPlayers === "number") {
+        setTotalPlayers(data.totalPlayers);
       }
     } catch (e) {
       console.error(e);
@@ -50,7 +78,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -63,31 +91,55 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
             className="bg-slate-900 border border-amber-500/30 rounded-3xl p-4 sm:p-6 w-[95vw] max-w-lg md:max-w-xl shadow-[0_0_40px_rgba(245,158,11,0.2)] flex flex-col max-h-[85vh] overflow-hidden relative"
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6 pb-4 border-b border-white/5 relative">
-              <div className="flex items-center text-xl sm:text-2xl font-black tracking-tight cursor-pointer" onClick={fetchLeaderboard}>
-                <motion.div
-                  animate={{ color: ['#818cf8', '#c084fc', '#22d3ee', '#818cf8'] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
-                >
-                  <Globe className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 shrink-0" />
-                </motion.div>
-                <motion.span 
-                  className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#818cf8,#c084fc,#22d3ee,#818cf8)] bg-[length:200%_auto]"
-                  animate={{ backgroundPosition: ['0% center', '200% center'] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
-                >
-                  Global Leaderboard
-                </motion.span>
+              <div
+                className="flex items-center text-xl sm:text-2xl font-black tracking-tight cursor-pointer flex-wrap gap-x-3 gap-y-2"
+                onClick={fetchLeaderboard}
+              >
+                <div className="flex items-center">
+                  <motion.div
+                    animate={{
+                      color: ["#818cf8", "#c084fc", "#22d3ee", "#818cf8"],
+                    }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 3,
+                      ease: "linear",
+                    }}
+                  >
+                    <Globe className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 shrink-0" />
+                  </motion.div>
+                  <motion.span
+                    className="text-transparent bg-clip-text bg-[linear-gradient(90deg,#818cf8,#c084fc,#22d3ee,#818cf8)] bg-[length:200%_auto]"
+                    animate={{
+                      backgroundPosition: ["0% center", "200% center"],
+                    }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 3,
+                      ease: "linear",
+                    }}
+                  >
+                    Global Leaderboard
+                  </motion.span>
+                </div>
+                {totalPlayers > 0 && (
+                  <span className="text-[10px] sm:text-xs text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded-md border border-teal-500/20 lowercase tracking-normal font-bold">
+                    {totalPlayers} {totalPlayers === 1 ? "Player" : "Players"}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
-                   onClick={fetchLeaderboard}
-                   disabled={leaderboardLoading}
-                   className="text-slate-400 hover:text-indigo-400 disabled:opacity-50 transition-colors p-2"
-                   title="Refresh Leaderboard"
+                  onClick={fetchLeaderboard}
+                  disabled={leaderboardLoading}
+                  className="text-slate-400 hover:text-indigo-400 disabled:opacity-50 transition-colors p-2"
+                  title="Refresh Leaderboard"
                 >
-                   <RefreshCw className={`w-5 h-5 ${leaderboardLoading ? 'animate-spin text-indigo-400' : ''}`} />
+                  <RefreshCw
+                    className={`w-5 h-5 ${leaderboardLoading ? "animate-spin text-indigo-400" : ""}`}
+                  />
                 </button>
-                <button 
+                <button
                   onClick={onClose}
                   className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all p-2"
                 >
@@ -95,12 +147,14 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                 </button>
               </div>
             </div>
-            
+
             <div className="overflow-y-auto space-y-2 pr-2 custom-scrollbar flex-grow">
               {leaderboardLoading ? (
                 <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                   <Loader2 className="w-8 h-8 animate-spin mb-3 text-indigo-500" />
-                  <span className="font-medium animate-pulse">Syncing Leaderboard...</span>
+                  <span className="font-medium animate-pulse">
+                    Syncing Leaderboard...
+                  </span>
                 </div>
               ) : leaderboardConfigured === false ? (
                 <div className="bg-rose-500/10 border border-rose-500/30 p-5 rounded-2xl text-left">
@@ -108,67 +162,125 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onCl
                     <Target className="w-5 h-5 mr-2" />
                     Redis Not Configured
                   </h4>
-                  <p className="text-slate-300 text-sm mb-3">To make the global leaderboard work, you need to add your Upstash Redis credentials.</p>
+                  <p className="text-slate-300 text-sm mb-3">
+                    To make the global leaderboard work, you need to add your
+                    Upstash Redis credentials.
+                  </p>
                   <div className="bg-slate-900 rounded-lg p-3 text-xs font-mono text-slate-400 border border-slate-800">
-                    UPSTASH_REDIS_REST_URL<br/>UPSTASH_REDIS_REST_TOKEN
+                    UPSTASH_REDIS_REST_URL
+                    <br />
+                    UPSTASH_REDIS_REST_TOKEN
                   </div>
                 </div>
               ) : leaderboard.length === 0 ? (
                 <div className="text-center bg-slate-800/30 rounded-2xl py-12 border border-slate-700/50">
                   <Trophy className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <div className="text-slate-400 font-medium">No scores yet.</div>
-                  <div className="text-sm text-slate-500">Be the first to leave your mark!</div>
+                  <div className="text-slate-400 font-medium">
+                    No scores yet.
+                  </div>
+                  <div className="text-sm text-slate-500">
+                    Be the first to leave your mark!
+                  </div>
                 </div>
               ) : (
                 leaderboard.map((entry, index) => (
-                  <div key={index} className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col gap-2 relative overflow-hidden group transition-all ${index < 3 ? 'bg-gradient-to-r border-t border-b' : 'bg-slate-800/40 border border-slate-700/40'}`}
+                  <div
+                    key={index}
+                    className={`rounded-xl sm:rounded-2xl p-3 sm:p-4 flex flex-col gap-2 relative overflow-hidden group transition-all ${index < 3 ? "bg-gradient-to-r border-t border-b" : "bg-slate-800/40 border border-slate-700/40"}`}
                     style={
-                      index === 0 ? { backgroundImage: 'linear-gradient(to right, rgba(251,191,36,0.1), rgba(217,119,6,0.05))', borderColor: 'rgba(251,191,36,0.2)' } :
-                      index === 1 ? { backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.1), rgba(100,116,139,0.05))', borderColor: 'rgba(148,163,184,0.2)' } :
-                      index === 2 ? { backgroundImage: 'linear-gradient(to right, rgba(180,83,9,0.15), rgba(120,53,15,0.05))', borderColor: 'rgba(180,83,9,0.2)' } : {}
+                      index === 0
+                        ? {
+                            backgroundImage:
+                              "linear-gradient(to right, rgba(251,191,36,0.1), rgba(217,119,6,0.05))",
+                            borderColor: "rgba(251,191,36,0.2)",
+                          }
+                        : index === 1
+                          ? {
+                              backgroundImage:
+                                "linear-gradient(to right, rgba(148,163,184,0.1), rgba(100,116,139,0.05))",
+                              borderColor: "rgba(148,163,184,0.2)",
+                            }
+                          : index === 2
+                            ? {
+                                backgroundImage:
+                                  "linear-gradient(to right, rgba(180,83,9,0.15), rgba(120,53,15,0.05))",
+                                borderColor: "rgba(180,83,9,0.2)",
+                              }
+                            : {}
                     }
                   >
                     <div className="flex flex-row items-center gap-2 sm:gap-4">
-                      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-black text-base sm:text-lg shadow-inner shrink-0 ${index === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : index === 1 ? 'bg-slate-300/20 text-slate-200 border border-slate-400/30' : index === 2 ? 'bg-amber-700/20 text-amber-600 border border-amber-700/30' : 'bg-slate-900 text-slate-400 border border-slate-700'}`}>
+                      <div
+                        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-black text-base sm:text-lg shadow-inner shrink-0 ${index === 0 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : index === 1 ? "bg-slate-300/20 text-slate-200 border border-slate-400/30" : index === 2 ? "bg-amber-700/20 text-amber-600 border border-amber-700/30" : "bg-slate-900 text-slate-400 border border-slate-700"}`}
+                      >
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 sm:gap-2">
-                           {index === 0 ? <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] shrink-0" /> : 
-                            index === 1 ? <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)] shrink-0" /> :
-                            index === 2 ? <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" /> : 
-                            null}
-                          <div className={`font-bold truncate ${index < 3 ? 'text-white text-base sm:text-lg' : 'text-slate-300 text-sm sm:text-base'}`}>{entry.name}</div>
+                          {index === 0 ? (
+                            <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] shrink-0" />
+                          ) : index === 1 ? (
+                            <Medal className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300 drop-shadow-[0_0_5px_rgba(203,213,225,0.6)] shrink-0" />
+                          ) : index === 2 ? (
+                            <Award className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 drop-shadow-[0_0_5px_rgba(180,83,9,0.5)] shrink-0" />
+                          ) : null}
+                          <div
+                            className={`font-bold truncate ${index < 3 ? "text-white text-base sm:text-lg" : "text-slate-300 text-sm sm:text-base"}`}
+                          >
+                            {entry.name}
+                          </div>
                         </div>
-                        {entry.id === playerId && <div className="text-[9px] sm:text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">You</div>}
+                        {entry.id === playerId && (
+                          <div className="text-[9px] sm:text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-0.5">
+                            You
+                          </div>
+                        )}
                       </div>
-                      <div className={`font-black text-right shrink-0 ${index === 0 ? 'text-amber-400 text-2xl sm:text-3xl' : index < 3 ? 'text-white text-xl sm:text-2xl' : 'text-slate-400 text-lg sm:text-xl'}`}>
+                      <div
+                        className={`font-black text-right shrink-0 ${index === 0 ? "text-amber-400 text-2xl sm:text-3xl" : index < 3 ? "text-white text-xl sm:text-2xl" : "text-slate-400 text-lg sm:text-xl"}`}
+                      >
                         {entry.score.toLocaleString()}
                       </div>
                     </div>
                     {/* Add options metadata */}
-                    {(entry.maxStreak !== undefined || entry.customTime !== undefined) && (
+                    {(entry.maxStreak !== undefined ||
+                      entry.customTime !== undefined) && (
                       <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-1 ml-10 sm:ml-[56px] text-[9px] sm:text-[10px] font-medium text-slate-400">
                         {entry.customTime !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {entry.customTime}s
-                           </div>
+                          <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{" "}
+                            {entry.customTime}s
+                          </div>
                         )}
                         {entry.numOptions !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {entry.numOptions} opts
-                           </div>
+                          <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                            <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{" "}
+                            {entry.numOptions} opts
+                          </div>
                         )}
                         {entry.maxStreak !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-500" /> {entry.maxStreak} streak
-                           </div>
+                          <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                            <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-500" />{" "}
+                            {entry.maxStreak} streak
+                          </div>
                         )}
                         {entry.pools !== undefined && (
-                           <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
-                             <Hexagon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400" /> 
-                             {(entry.pools.character && entry.pools.neutral && entry.pools.monster && entry.pools.other) ? 'ALL' : [entry.pools.character && 'CH', entry.pools.neutral && 'NE', entry.pools.monster && 'MO', entry.pools.other && 'OT'].filter(Boolean).join(',')}
-                           </div>
+                          <div className="flex items-center gap-1 bg-slate-900/50 px-1.5 sm:px-2 py-0.5 rounded-md border border-slate-700/50">
+                            <Hexagon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400" />
+                            {entry.pools.character &&
+                            entry.pools.neutral &&
+                            entry.pools.monster &&
+                            entry.pools.other
+                              ? "ALL"
+                              : [
+                                  entry.pools.character && "CH",
+                                  entry.pools.neutral && "NE",
+                                  entry.pools.monster && "MO",
+                                  entry.pools.other && "OT",
+                                ]
+                                  .filter(Boolean)
+                                  .join(",")}
+                          </div>
                         )}
                       </div>
                     )}
