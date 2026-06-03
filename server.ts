@@ -30,7 +30,7 @@ async function startServer() {
       
       const leaderboard = await client.zrange("global_leaderboard", 0, 49, { rev: true, withScores: true });
       if (leaderboard.length === 0) {
-         return res.json({ isConfigured: true, leaderboard: [] });
+         return res.json({ isConfigured: true, leaderboard: [], totalPlayers: 0 });
       }
       
       const formatted = [];
@@ -63,7 +63,8 @@ async function startServer() {
           pools: meta.pools
         });
       }
-      res.json({ isConfigured: true, leaderboard: formatted });
+      const totalPlayers = await client.zcard("global_leaderboard");
+      res.json({ isConfigured: true, leaderboard: formatted, totalPlayers });
     } catch (e) {
       res.status(500).json({ error: "Failed to fetch leaderboard" });
     }
