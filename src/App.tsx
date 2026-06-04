@@ -161,13 +161,11 @@ export default function App() {
     loadCards();
     checkGameVersion().then(version => {
       if (version) {
-        let storedVersion = localStorage.getItem('czn_game_version');
+        const storedVersion = localStorage.getItem('czn_game_version');
         if (!storedVersion) {
-          storedVersion = '0.1';
-          localStorage.setItem('czn_game_version', storedVersion);
-        }
-        
-        if (storedVersion !== version) {
+          // First time visitor, already fetching latest cards
+          localStorage.setItem('czn_game_version', version);
+        } else if (storedVersion !== version) {
           setUpdateAvailable(true);
           setShowUpdatePopup(true);
         }
