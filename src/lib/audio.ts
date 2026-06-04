@@ -11,7 +11,7 @@ export const initAudio = () => {
     }
     
     if (!swapAudioBuffer && audioCtx) {
-      fetch('https://raw.githubusercontent.com/DEX-1101/czn-unigram/main/asset/send.wav')
+      fetch('https://cdn.jsdelivr.net/gh/DEX-1101/czn-unigram@main/asset/send.wav')
         .then(res => res.arrayBuffer())
         .then(buf => audioCtx!.decodeAudioData(buf))
         .then(decoded => { swapAudioBuffer = decoded; })
@@ -67,7 +67,7 @@ export const playIncorrectSound = () => {
   osc.stop(t + 0.15);
 };
 
-const swapAudio = new Audio('https://raw.githubusercontent.com/DEX-1101/czn-unigram/main/asset/send.wav');
+const swapAudio = new Audio('https://cdn.jsdelivr.net/gh/DEX-1101/czn-unigram@main/asset/send.wav');
 swapAudio.crossOrigin = 'anonymous';
 swapAudio.volume = 0.5;
 

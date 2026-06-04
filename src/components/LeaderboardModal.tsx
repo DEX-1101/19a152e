@@ -63,7 +63,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
         setTotalPlayers(data.totalPlayers);
       }
     } catch (e) {
-      console.error(e);
+      console.warn("Failed to fetch leaderboard:", e);
     } finally {
       setLeaderboardLoading(false);
     }

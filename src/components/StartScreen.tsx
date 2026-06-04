@@ -42,6 +42,7 @@ interface LeaderboardEntry {
 }
 
 interface StartScreenProps {
+  updateAvailable?: boolean;
   onStart: () => void;
   onRefresh: () => void;
   isLoading: boolean;
@@ -68,6 +69,7 @@ interface StartScreenProps {
 }
 
 export const StartScreen: React.FC<StartScreenProps> = ({
+  updateAvailable,
   onStart,
   onRefresh,
   isLoading,
@@ -112,7 +114,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         setTotalPlayersTop3(data.totalPlayers);
       }
     } catch (e) {
-      console.error(e);
+      console.warn("Failed to fetch leaderboard:", e);
     } finally {
       setIsLoadingTop3(false);
     }
@@ -142,12 +144,12 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
           style={{
             maskImage:
-              "url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)",
+              "url(https://dex-1101.github.io/19a152e/others/btn_card.png)",
             maskSize: "contain",
             maskRepeat: "no-repeat",
             maskPosition: "center",
             WebkitMaskImage:
-              "url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)",
+              "url(https://dex-1101.github.io/19a152e/others/btn_card.png)",
             WebkitMaskSize: "contain",
             WebkitMaskRepeat: "no-repeat",
             WebkitMaskPosition: "center",
@@ -206,7 +208,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     body: JSON.stringify({ id: playerId, name: newName }),
                   })
                     .then(() => fetchTop3())
-                    .catch(console.error);
+                    .catch(e => console.warn("name enter fail", e));
                 }
               }}
               autoFocus
@@ -224,7 +226,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                     body: JSON.stringify({ id: playerId, name: newName }),
                   })
                     .then(() => fetchTop3())
-                    .catch(console.error);
+                    .catch(e => console.warn("name submit fail", e));
                 }
               }}
               className="p-2 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white transition-colors"
@@ -662,12 +664,15 @@ export const StartScreen: React.FC<StartScreenProps> = ({
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"
+            className={`flex-1 flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-slate-300 bg-slate-800/40 hover:bg-slate-800 border hover:border-slate-600 rounded-xl transition-all duration-300 disabled:opacity-50 backdrop-blur-sm relative overflow-hidden ${updateAvailable ? "animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.4)] border-emerald-500/60" : "border-slate-700"}`}
           >
+            {updateAvailable && (
+              <span className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-bl-lg rounded-tr-xl tracking-wider z-10">NEW</span>
+            )}
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin text-indigo-400" : "text-slate-400"}`}
+              className={`w-4 h-4 mr-2 relative z-10 ${isLoading ? "animate-spin text-indigo-400" : updateAvailable ? "text-emerald-400" : "text-slate-400"}`}
             />
-            Update Card Pool
+            <span className="relative z-10">Update Card Pool</span>
           </button>
 
           <button
@@ -818,7 +823,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                           crossOrigin="anonymous"
                         />
                         <img
-                          src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                          src="https://dex-1101.github.io/19a152e/others/card_ego_all.png"
                           alt=""
                           className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
                           crossOrigin="anonymous"
@@ -860,7 +865,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
                 crossOrigin="anonymous"
               />
               <img
-                src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                src="https://dex-1101.github.io/19a152e/others/card_ego_all.png"
                 alt=""
                 className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
                 crossOrigin="anonymous"

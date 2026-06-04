@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Analytics } from '@vercel/analytics/react';
 import { CardData, GameStats, BestScoreData, HistoryEntry } from './types';
-import { fetchCards } from './lib/api';
+import { fetchCards, checkGameVersion } from './lib/api';
 import { initAudio, playCorrectSound, playIncorrectSound, playSwapSound } from './lib/audio';
 import { shuffleArray } from './lib/utils';
 import { StartScreen } from './components/StartScreen';
@@ -39,6 +38,8 @@ export default function App() {
   }, [pools, allCards]);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [status, setStatus] = useState<GameStatus>('start');
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('czn_player_name') || '');
@@ -148,7 +149,7 @@ export default function App() {
       ]);
       setAllCards({ character: charData, neutral: neutralData, monster: monsterData || [], other: otherData || [] });
     } catch (error) {
-      console.error("Card load error:", error);
+      console.warn("Card load error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -157,6 +158,21 @@ export default function App() {
   // Initialize
   useEffect(() => {
     loadCards();
+    checkGameVersion().then(version => {
+      if (version) {
+        let storedVersion = localStorage.getItem('czn_game_version');
+        if (!storedVersion) {
+          storedVersion = '0.1';
+          localStorage.setItem('czn_game_version', storedVersion);
+        }
+        
+        if (storedVersion !== version) {
+          setUpdateAvailable(true);
+          setShowUpdatePopup(true);
+        }
+      }
+    });
+
     const savedScore = localStorage.getItem('czn_best_score');
     if (savedScore) {
       try {
@@ -322,8 +338,12 @@ export default function App() {
     setEliminatedOptions([]);
   }, [numOptions, endGame]);
 
-  const refreshCards = useCallback(() => {
-    loadCards(true);
+  const refreshCards = useCallback(async () => {
+    await loadCards(true);
+    setUpdateAvailable(false);
+    checkGameVersion().then(version => {
+      if (version) localStorage.setItem('czn_game_version', version);
+    });
   }, [loadCards]);
 
   const startGame = () => {
@@ -475,11 +495,11 @@ export default function App() {
                     animate={{ backgroundPosition: ['0% center', '200% center'] }}
                     transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
                     style={{
-                      maskImage: 'url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)',
+                      maskImage: 'url(https://dex-1101.github.io/19a152e/others/btn_card.png)',
                       maskSize: 'contain',
                       maskRepeat: 'no-repeat',
                       maskPosition: 'center',
-                      WebkitMaskImage: 'url(https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/btn_card.png)',
+                      WebkitMaskImage: 'url(https://dex-1101.github.io/19a152e/others/btn_card.png)',
                       WebkitMaskSize: 'contain',
                       WebkitMaskRepeat: 'no-repeat',
                       WebkitMaskPosition: 'center'
@@ -501,6 +521,7 @@ export default function App() {
           {status === 'start' && !isPreloadingImages && (
             <StartScreen 
               key="start" 
+              updateAvailable={updateAvailable}
               onStart={startGame} 
               onRefresh={refreshCards}
               isLoading={isLoading} 
@@ -643,7 +664,7 @@ export default function App() {
                     fetchPriority="high"
                   />
                   <img
-                    src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/card_ego_all.png"
+                    src="https://dex-1101.github.io/19a152e/others/card_ego_all.png"
                     alt=""
                     className="absolute left-[-1px] top-[-2%] h-[104%] w-auto pointer-events-none z-10 drop-shadow-[2px_0_3px_rgba(0,0,0,0.5)]"
                     crossOrigin="anonymous"
@@ -777,6 +798,41 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Update Available Modal */}
+      <AnimatePresence>
+        {showUpdatePopup && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-slate-900 border border-indigo-500/30 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center text-center"
+            >
+              <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mb-4">
+                <Star className="w-8 h-8 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Update</h3>
+              <p className="text-slate-400 mb-6 text-sm">
+                New card has been added. Please update your card pool so see it!
+              </p>
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setShowUpdatePopup(false)}
+                  className="flex-1 py-3 px-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-indigo-500/20"
+                >
+                  Got it
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Quit Confirmation Modal */}
       <AnimatePresence>
@@ -932,7 +988,7 @@ export default function App() {
               
               <div className="relative w-full aspect-[3/4] mb-6 rounded-xl overflow-hidden group border border-slate-700/50 shadow-lg bg-slate-800">
                 <img 
-                  src="https://raw.githubusercontent.com/DEX-1101/19a152e/refs/heads/main/others/g451g5sg.webp" 
+                  src="https://dex-1101.github.io/19a152e/others/g451g5sg.webp" 
                   alt="Easter Egg Reward" 
                   className={`w-full h-full object-cover transition-all duration-700 ${revealEasterEgg ? 'blur-0 scale-100' : 'blur-xl scale-110 grayscale'}`}
                   crossOrigin="anonymous"
@@ -985,7 +1041,6 @@ export default function App() {
         <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-rose-900/10 blur-[100px]"></div>
       </div>
-      <Analytics />
     </div>
   );
 }
